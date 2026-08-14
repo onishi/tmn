@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>broadcaster mock (test only)</title>
+</head>
+<body>
+  <!--
+    実際のAndroid配信アプリの代わりに、ブラウザのgetUserMedia(fakeカメラ)で
+    viewer/app.js とのWebRTC疎通を検証するためのテスト専用ページ。
+    ?room=<トークン>&signaling=<wsUrl> をクエリで指定する。
+  -->
+  <script>
+    const params = new URLSearchParams(location.search);
+    const room = params.get("room");
+    const signalingUrl = params.get("signaling");
+    window.__status = "init";
+
+    async function main() {
+      const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=broadcaster`;
+      const ws = new WebSocket(wsUrl);
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }],
+      });
+
+      pc.addEventListener("icecandidate", (event) => {
+        if (event.candidate) {
+          ws.send(JSON.stringify({ type: "ice-candidate", candidate: event.candidate }));
+        }
+      });
+
+      ws.addEventListener("message", async (event) => {
+        const message = JSON.parse(event.data);
+
+        if (message.type === "viewer-joined") {
+          window.__status = "viewer-joined";
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          for (const track of stream.getTracks()) {
+            pc.addTrack(track, stream);
+          }
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          ws.send(JSON.stringify({ type: "offer", sdp: offer.sdp }));
+          window.__status = "offer-sent";
+        } else if (message.type === "answer") {
+          await pc.setRemoteDescription({ type: "answer", sdp: message.sdp });
+          window.__status = "answer-received";
+        } else if (message.type === "ice-candidate") {
+          await pc.addIceCandidate(message.candidate);
+        }
+      });
+
+      pc.addEventListener("connectionstatechange", () => {
+        window.__pcState = pc.connectionState;
+      });
+    }
+
+    main();
+  </script>
+</body>
+</html>

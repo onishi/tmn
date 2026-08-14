@@ -130,3 +130,17 @@
 - TURNの無料枠(月1,000GB)は個人の見守り用途であれば通常超えない想定
 - Durable Objectsは「ルームごとの状態を持つ軽量サーバー」として動作するため、Firebaseのようなドキュメント指向DBを使うより素のWebSocket実装に近い形でシグナリングを書ける
 - 将来的にSFU(Cloudflare Realtime SFU)への移行も同一プラットフォーム内で検討できる(フェーズ2以降の複数視聴者対応時)
+
+---
+
+## 5. 実装
+
+開発計画は [plan.md](./plan.md) を参照。コードは以下のディレクトリに分かれている。
+
+| ディレクトリ | 内容 |
+|---|---|
+| [`signaling/`](./signaling) | シグナリングWorker(Cloudflare Workers + Durable Objects) |
+| [`viewer/`](./viewer) | 視聴Webアプリ(静的ページ) |
+| [`android/`](./android) | 配信Androidアプリ(Kotlin、Android SDK未検証) |
+
+デプロイ手順は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。
