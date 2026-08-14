@@ -9,6 +9,8 @@
     実際のAndroid配信アプリの代わりに、ブラウザのgetUserMedia(fakeカメラ)で
     viewer/app.js とのWebRTC疎通を検証するためのテスト専用ページ。
     ?room=<トークン>&signaling=<wsUrl> をクエリで指定する。
+    viewer側の再接続テストに対応するため、シグナリングWSが切れたら簡易的に再接続する
+    (本番のAndroidアプリの自動再接続はplan.md M6で別途実装する)。
   -->
   <script>
     const params = new URLSearchParams(location.search);
@@ -16,30 +18,44 @@
     const signalingUrl = params.get("signaling");
     window.__status = "init";
 
-    async function main() {
-      const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=broadcaster`;
-      const ws = new WebSocket(wsUrl);
-      const pc = new RTCPeerConnection({
+    let pc = null;
+
+    function createPeerConnection(ws) {
+      // viewer-joinedを受けるたびに、既存のPeerConnectionを破棄して作り直す
+      // (視聴側の再接続に対応するため。StreamingService.ktの挙動と合わせている)
+      if (pc) {
+        pc.close();
+      }
+      pc = new RTCPeerConnection({
         iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }],
       });
-
       pc.addEventListener("icecandidate", (event) => {
         if (event.candidate) {
           ws.send(JSON.stringify({ type: "ice-candidate", candidate: event.candidate }));
         }
       });
+      pc.addEventListener("connectionstatechange", () => {
+        window.__pcState = pc.connectionState;
+      });
+      return pc;
+    }
+
+    function connect() {
+      const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=broadcaster`;
+      const ws = new WebSocket(wsUrl);
 
       ws.addEventListener("message", async (event) => {
         const message = JSON.parse(event.data);
 
         if (message.type === "viewer-joined") {
           window.__status = "viewer-joined";
+          const activePc = createPeerConnection(ws);
           const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
           for (const track of stream.getTracks()) {
-            pc.addTrack(track, stream);
+            activePc.addTrack(track, stream);
           }
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
+          const offer = await activePc.createOffer();
+          await activePc.setLocalDescription(offer);
           ws.send(JSON.stringify({ type: "offer", sdp: offer.sdp }));
           window.__status = "offer-sent";
         } else if (message.type === "answer") {
@@ -50,12 +66,13 @@
         }
       });
 
-      pc.addEventListener("connectionstatechange", () => {
-        window.__pcState = pc.connectionState;
+      ws.addEventListener("close", () => {
+        window.__status = "ws-closed";
+        setTimeout(connect, 1000);
       });
     }
 
-    main();
+    connect();
   </script>
 </body>
 </html>

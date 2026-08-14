@@ -118,7 +118,8 @@ class StreamingService : Service(), SignalingClient.Listener {
     // --- streaming pipeline ---
 
     private fun startStreaming() {
-        if (peerConnection != null) return // 既に配信中
+        // 視聴側が再接続してきた場合も含め、常に新しいPeerConnectionで配信をやり直す
+        if (peerConnection != null) stopStreaming()
 
         updateNotification(getString(R.string.notification_text_streaming))
 

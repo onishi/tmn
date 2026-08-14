@@ -3,11 +3,36 @@ const room = params.get("room");
 const statusEl = document.getElementById("status");
 const videoEl = document.getElementById("remote-video");
 
+const INITIAL_RECONNECT_DELAY_MS = 1000;
+const MAX_RECONNECT_DELAY_MS = 15000;
+
+let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+let reconnectTimer = null;
+let currentPc = null;
+
 function setStatus(text) {
   statusEl.textContent = text;
 }
 
-async function main() {
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  setStatus(`接続が切断されました。${Math.round(reconnectDelay / 1000)}秒後に再接続します...`);
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connect();
+  }, reconnectDelay);
+  reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
+}
+
+function teardownPeerConnection() {
+  if (currentPc) {
+    currentPc.close();
+    currentPc = null;
+  }
+  videoEl.srcObject = null;
+}
+
+function connect() {
   if (!room) {
     setStatus("URLに ?room=<トークン> が必要です");
     return;
@@ -26,9 +51,11 @@ async function main() {
     return;
   }
 
+  teardownPeerConnection();
   const pc = new RTCPeerConnection({
     iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }],
   });
+  currentPc = pc;
 
   pc.addEventListener("track", (event) => {
     videoEl.srcObject = event.streams[0];
@@ -42,6 +69,7 @@ async function main() {
   });
 
   ws.addEventListener("open", () => {
+    reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     setStatus("配信開始を待っています...");
   });
 
@@ -59,15 +87,14 @@ async function main() {
   });
 
   ws.addEventListener("close", () => {
-    setStatus("接続が切断されました");
+    teardownPeerConnection();
+    scheduleReconnect();
   });
 
   ws.addEventListener("error", () => {
-    setStatus("接続エラー");
+    // close イベントが後続するため、再接続のスケジューリングは close 側のみで行う
+    setStatus("接続エラーが発生しました");
   });
 }
 
-main().catch((err) => {
-  console.error(err);
-  setStatus(`予期しないエラー: ${err.message}`);
-});
+connect();
