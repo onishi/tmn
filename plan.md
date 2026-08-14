@@ -26,9 +26,12 @@ README.md の設計(MVP設計・発展計画フェーズ2〜4)を、実装単位
 - [ ] Cloudflareアカウント作成
 - [ ] Workers / Pages / Realtime (TURN) を有効化
 - [ ] `wrangler` CLIセットアップ、ログイン確認
-- [ ] リポジトリ構成決定(モノレポ想定: `signaling/`, `viewer/`, `android/`)
+- [x] リポジトリ構成決定(モノレポ想定: `signaling/`, `viewer/`, `android/`)
 - [ ] Android Studio + Kotlin開発環境セットアップ
 - [ ] 配信用の古いスマホを用意し、開発者オプション・USBデバッグ有効化
+
+> 上記のCloudflareアカウント作成・実機準備はユーザー環境が必要なため、この開発環境では未着手。
+> それ以外(M1・M2の実装/ローカル疎通確認)は先行して完了させた。
 
 **完了条件:** `wrangler whoami` 成功、Android実機/エミュレータにデバッグビルドが転送できる。
 
@@ -38,12 +41,12 @@ README.md の設計(MVP設計・発展計画フェーズ2〜4)を、実装単位
 
 Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作る。
 
-- [ ] Durable Object `Room` クラスの雛形作成(1ルーム = 1トークン)
-- [ ] WebSocket接続の確立・切断ハンドリング(配信側/視聴側の2ロールを区別)
-- [ ] メッセージ中継ロジック(Offer/Answer/ICE candidateをそのまま相手側へフォワード)
-- [ ] 視聴側接続をトリガーに配信側へ「配信開始」通知を送る仕組み
-- [ ] ルームトークンのバリデーション(推測困難な文字列、URLパスまたはクエリで指定)
-- [ ] ローカル(`wrangler dev`)でWebSocketクライアント(wscat等)による疎通テスト
+- [x] Durable Object `Room` クラスの雛形作成(1ルーム = 1トークン)
+- [x] WebSocket接続の確立・切断ハンドリング(配信側/視聴側の2ロールを区別)
+- [x] メッセージ中継ロジック(Offer/Answer/ICE candidateをそのまま相手側へフォワード)
+- [x] 視聴側接続をトリガーに配信側へ「配信開始」通知を送る仕組み
+- [x] ルームトークンのバリデーション(推測困難な文字列、URLパスまたはクエリで指定)
+- [x] ローカル(`wrangler dev`)でWebSocketクライアント(`test/manual-relay-check.mjs`)による疎通テスト
 - [ ] Cloudflareへデプロイし、疎通確認
 
 **完了条件:** 2つのWebSocketクライアント(配信役・視聴役を模擬)が同一ルームでメッセージを中継できる。
@@ -54,12 +57,12 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 配信側Androidアプリが未完成でも進められるよう、先にWeb側だけで検証する。
 
-- [ ] 静的ページ雛形(HTML/CSS/JS、フレームワークは軽量なもの or vanilla)
-- [ ] URLの `?room=xxxxxxxx` トークン読み取り
-- [ ] シグナリングWorkerへのWebSocket接続
-- [ ] RTCPeerConnection生成、Answer送信ロジック実装
-- [ ] `<video>` タグへのリモートストリーム表示
-- [ ] ブラウザ2タブ(片方をChromeの `getUserMedia` でカメラ映像を模擬配信)でWebRTC疎通確認
+- [x] 静的ページ雛形(HTML/CSS/JS、フレームワークは軽量なもの or vanilla)
+- [x] URLの `?room=xxxxxxxx` トークン読み取り
+- [x] シグナリングWorkerへのWebSocket接続
+- [x] RTCPeerConnection生成、Answer送信ロジック実装
+- [x] `<video>` タグへのリモートストリーム表示
+- [x] ブラウザ2タブ(片方をChromeの `getUserMedia` でカメラ映像を模擬配信)でWebRTC疎通確認(Playwright + fake device、320x240映像がvideo要素に到達しPeerConnectionが`connected`になることを確認)
 - [ ] Cloudflare Pagesへのデプロイ設定(プレビュー環境)
 
 **完了条件:** ブラウザ同士でカメラ映像がP2P配信できる(Android側なしでWebRTC経路を検証済み)。

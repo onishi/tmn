@@ -17,7 +17,14 @@ async function main() {
   const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=viewer`;
 
   setStatus("シグナリングサーバーに接続中...");
-  const ws = new WebSocket(wsUrl);
+
+  let ws;
+  try {
+    ws = new WebSocket(wsUrl);
+  } catch (err) {
+    setStatus(`シグナリングURLが不正です: ${err.message}`);
+    return;
+  }
 
   const pc = new RTCPeerConnection({
     iceServers: [{ urls: "stun:stun.cloudflare.com:3478" }],
@@ -60,4 +67,7 @@ async function main() {
   });
 }
 
-main();
+main().catch((err) => {
+  console.error(err);
+  setStatus(`予期しないエラー: ${err.message}`);
+});
