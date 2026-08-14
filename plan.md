@@ -114,7 +114,9 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 - [ ] TURN利用量モニタリング(Cloudflareダッシュボード定期確認 or 通知)
 - [x] 視聴Webアプリ側の自動再接続(シグナリングWS切断時に指数バックオフで再接続、PeerConnectionを作り直す)
-- [ ] 配信Androidアプリ側の自動再接続ロジック(WorkManagerで定期的にWS生存確認、切断時に再接続)
+- [x] 配信Androidアプリ側のシグナリング切断時の即時再接続(`SignalingClient`が指数バックオフで
+      自動再接続。viewer/app.jsと同じ方式。ビルド未検証)
+- [ ] WorkManagerによる定期的なプロセス生存確認・再起動(FGサービスごとプロセスが終了した場合の復旧)
 - [ ] Wi-Fi切断・アプリ復帰時のセッション再構築
 - [ ] 複数視聴者対応の設計検討(P2P複数接続 or SFU移行の比較)
 - [x] 簡易パスワード認証の実装(シグナリング層): `ACCESS_PASSWORD`シークレットを設定すると

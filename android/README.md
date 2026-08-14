@@ -25,6 +25,7 @@
 object Config {
     const val SIGNALING_URL = "wss://tmn-signaling.<your-subdomain>.workers.dev"
     const val ROOM_TOKEN = "<room-token>"
+    const val ACCESS_PASSWORD = "" // シグナリングWorker側でACCESS_PASSWORDを設定している場合のみ(任意)
 }
 ```
 
@@ -44,4 +45,8 @@ Android Studioでこのディレクトリを開いても良い。`minSdk = 26` �
 - Foreground Service化(`foregroundServiceType="camera"`)はAndroid 14以降の権限要件に沿っているが、
   実機での起動・画面消灯後の継続動作は未検証。
 - バッテリー最適化除外・スリープ設定は `MainActivity` からダイアログを開くのみで、実際の除外確認は行っていない。
-- `WorkManager` 依存は追加済みだが、自動再接続ロジックの実装はフェーズ2(plan.md M6)で行う。
+- シグナリングWebSocketが切断された場合、`SignalingClient`が指数バックオフ(1秒〜15秒)で自動的に
+  再接続する(viewer/app.jsと同じ方式)。ただしこれはプロセスが生きている間の再接続のみで、
+  Androidがフォアグラウンドサービスごとプロセスを終了させた場合の復旧はカバーしない。
+  `WorkManager` 依存は将来その定期的なプロセス生存確認・再起動(plan.md M6)向けに追加済みだが、
+  実装はまだ行っていない。
