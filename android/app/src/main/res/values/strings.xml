@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TMN配信</string>
+    <string name="notification_channel_name">見守り配信</string>
+    <string name="notification_text_idle">待機中(視聴者接続時に配信開始)</string>
+    <string name="notification_text_streaming">配信中</string>
+</resources>

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>TMN - 見守りカメラ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin: 0; background: #111; color: #eee; font-family: system-ui, sans-serif; }
+    #remote-video { width: 100%; max-height: 100vh; display: block; background: #000; }
+    #status { position: fixed; top: 0; left: 0; right: 0; padding: 8px 12px; background: rgba(0, 0, 0, 0.6); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="status">初期化中...</div>
+  <video id="remote-video" autoplay playsinline></video>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
