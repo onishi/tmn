@@ -58,7 +58,7 @@
 - 視聴用URLに推測困難なトークンを付与(例: `?room=xxxxxxxx`)
 - Durable Objectsのルーム(Object ID)をトークンに紐付け、該当ルームの接続情報のみ読み書き可能にする
 - シグナリング通信はCloudflare経由のWSS/HTTPSで常に暗号化される。映像・音声ストリーム自体もWebRTC標準のDTLS-SRTPによりP2P区間・TURN区間ともエンドツーエンドで暗号化される(追加実装不要)
-- 本格運用前にパスワード認証を追加予定(発展計画参照)
+- 簡易パスワード認証(任意):シグナリングWorkerに`ACCESS_PASSWORD`シークレットを設定すると、ルームトークンに加えて共有パスワードの一致がWebSocket接続の必須条件になる(実装済み、`signaling/README.md`参照)
 
 ### 1.5 開発ステップ
 

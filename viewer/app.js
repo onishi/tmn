@@ -38,8 +38,9 @@ function connect() {
     return;
   }
 
-  const { signalingUrl } = window.TMN_CONFIG;
-  const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=viewer`;
+  const { signalingUrl, accessPassword } = window.TMN_CONFIG;
+  const passwordQuery = accessPassword ? `&password=${encodeURIComponent(accessPassword)}` : "";
+  const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=viewer${passwordQuery}`;
 
   setStatus("シグナリングサーバーに接続中...");
 

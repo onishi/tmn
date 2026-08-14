@@ -4,4 +4,7 @@ package com.tmn.broadcaster
 object Config {
     const val SIGNALING_URL = "wss://tmn-signaling.<your-subdomain>.workers.dev"
     const val ROOM_TOKEN = "<room-token>"
+
+    // シグナリングWorker側で ACCESS_PASSWORD を設定している場合のみ、同じ値を設定する(任意)
+    const val ACCESS_PASSWORD = ""
 }

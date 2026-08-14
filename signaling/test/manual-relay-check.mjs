@@ -4,10 +4,14 @@
 
 const ROOM = "test-room-token-1234";
 const base = `ws://localhost:8787/room/${ROOM}`;
+// サーバー側で ACCESS_PASSWORD (.dev.vars) を設定している場合は、
+// 同じ値を TEST_ACCESS_PASSWORD 環境変数で渡す。
+const password = process.env.TEST_ACCESS_PASSWORD;
+const passwordQuery = password ? `&password=${encodeURIComponent(password)}` : "";
 
 function connect(role) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${base}?role=${role}`);
+    const ws = new WebSocket(`${base}?role=${role}${passwordQuery}`);
     const received = [];
     ws.addEventListener("message", (e) => received.push(JSON.parse(e.data)));
     ws.addEventListener("open", () => resolve({ ws, received }));

@@ -4,11 +4,28 @@ export { Room };
 
 export interface Env {
   ROOMS: DurableObjectNamespace;
+  // 設定されていれば ?password= の一致を要求する(簡易パスワード認証、README 1.4 / plan.md M6)。
+  // 未設定の場合はルームトークンのみで従来通り動作する。
+  ACCESS_PASSWORD?: string;
 }
 
 // 視聴用URLの ?room=xxxxxxxx トークンをそのままルームパスに用いる。
 // トークンが分からない限り該当ルームの接続情報は読み書きできない(README 1.4)。
 const ROOM_PATH = /^\/room\/([A-Za-z0-9_-]{8,})$/;
+
+/** 文字列長に関わらず常に同じ回数だけ比較する簡易的なタイミングセーフ比較 */
+function timingSafeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const bufA = encoder.encode(a);
+  const bufB = encoder.encode(b);
+  const length = Math.max(bufA.length, bufB.length);
+
+  let diff = bufA.length ^ bufB.length;
+  for (let i = 0; i < length; i++) {
+    diff |= (bufA[i] ?? 0) ^ (bufB[i] ?? 0);
+  }
+  return diff === 0;
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -21,6 +38,13 @@ export default {
 
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("Expected websocket", { status: 426 });
+    }
+
+    if (env.ACCESS_PASSWORD) {
+      const password = url.searchParams.get("password") ?? "";
+      if (!timingSafeEqual(password, env.ACCESS_PASSWORD)) {
+        return new Response("Unauthorized", { status: 401 });
+      }
     }
 
     const roomToken = match[1];
