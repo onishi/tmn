@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -71,8 +72,14 @@ class StreamingService : Service(), SignalingClient.Listener {
         super.onDestroy()
     }
 
-    private fun signalingUrl(): String =
-        "${Config.SIGNALING_URL}/room/${Config.ROOM_TOKEN}?role=broadcaster"
+    private fun signalingUrl(): String {
+        val base = "${Config.SIGNALING_URL}/room/${Config.ROOM_TOKEN}?role=broadcaster"
+        return if (Config.ACCESS_PASSWORD.isNotEmpty()) {
+            "$base&password=${Uri.encode(Config.ACCESS_PASSWORD)}"
+        } else {
+            base
+        }
+    }
 
     private fun initPeerConnectionFactory() {
         PeerConnectionFactory.initialize(

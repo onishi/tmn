@@ -16,6 +16,7 @@
     const params = new URLSearchParams(location.search);
     const room = params.get("room");
     const signalingUrl = params.get("signaling");
+    const accessPassword = params.get("password") || "";
     window.__status = "init";
 
     let pc = null;
@@ -41,7 +42,8 @@
     }
 
     function connect() {
-      const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=broadcaster`;
+      const passwordQuery = accessPassword ? `&password=${encodeURIComponent(accessPassword)}` : "";
+      const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=broadcaster${passwordQuery}`;
       const ws = new WebSocket(wsUrl);
 
       ws.addEventListener("message", async (event) => {

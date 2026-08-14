@@ -117,7 +117,9 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 - [ ] 配信Androidアプリ側の自動再接続ロジック(WorkManagerで定期的にWS生存確認、切断時に再接続)
 - [ ] Wi-Fi切断・アプリ復帰時のセッション再構築
 - [ ] 複数視聴者対応の設計検討(P2P複数接続 or SFU移行の比較)
-- [ ] 簡易パスワード認証の実装(シグナリング層 or Cloudflare Access)
+- [x] 簡易パスワード認証の実装(シグナリング層): `ACCESS_PASSWORD`シークレットを設定すると
+      `?password=`の一致がWS接続の必須条件になる。viewer/Androidの両方に対応。
+      未設定時は従来通りルームトークンのみで動作(後方互換)
 
 **完了条件:** 接続断からの自動復旧が機能し、認証なしでは視聴URLにアクセスできない。
 
