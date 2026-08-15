@@ -4,14 +4,32 @@
   <meta charset="utf-8" />
   <title>TMN - 見守りカメラ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b0c" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230b0b0c'/%3E%3Crect x='3' y='7' width='13' height='11' rx='2' fill='%23f5a623'/%3E%3Cpath d='M16 10.5 21 7v11l-5-3.5z' fill='%23f5a623'/%3E%3C/svg%3E" />
   <style>
+    :root {
+      --bg: #0b0b0c;
+      --surface: #19191b;
+      --surface-2: rgba(255, 255, 255, 0.08);
+      --surface-2-hover: rgba(255, 255, 255, 0.14);
+      --text: #f2f2f2;
+      --text-secondary: #9a9a9e;
+      --border: rgba(255, 255, 255, 0.14);
+      --accent: #f5a623;
+      --accent-text: #201400;
+      --success: #3ecf6e;
+      --danger: #e0575a;
+    }
+    * {
+      box-sizing: border-box;
+    }
     html, body {
       margin: 0;
       height: 100vh;
       height: 100dvh; /* iOS Safari等でアドレスバーの出没によりレイアウトが跳ねるのを防ぐ */
-      background: #000;
-      color: #eee;
-      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
       overscroll-behavior: none; /* 引っ張って更新のバウンスを抑止 */
     }
     #remote-video {
@@ -21,6 +39,8 @@
       background: #000;
       object-fit: contain; /* 画面比率が違っても映像を欠けさせず全体を表示する */
     }
+
+    /* --- 上部ステータスバー --- */
     #status-bar {
       position: fixed;
       top: 0;
@@ -33,61 +53,186 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 8px 12px;
-      padding-top: calc(8px + env(safe-area-inset-top));
-      padding-left: calc(12px + env(safe-area-inset-left));
-      padding-right: calc(12px + env(safe-area-inset-right));
-      background: rgba(0, 0, 0, 0.6);
-      font-size: 14px;
+      padding: 10px 10px 10px 14px;
+      padding-top: calc(10px + env(safe-area-inset-top));
+      padding-left: calc(14px + env(safe-area-inset-left));
+      padding-right: calc(10px + env(safe-area-inset-right));
+      background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
     }
-    #status {
+    #status-summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    #status-dot {
+      flex: 0 0 auto;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+    }
+    #status-bar[data-state="streaming"] #status-dot {
+      background: var(--success);
+    }
+    #status-bar[data-state="connecting"] #status-dot,
+    #status-bar[data-state="waiting"] #status-dot,
+    #status-bar[data-state="reconnecting"] #status-dot {
+      background: var(--accent);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    #status-bar[data-state="error"] #status-dot {
+      background: var(--danger);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.75); }
+    }
+    #status-text-group {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.3;
+    }
+    #camera-name {
+      font-size: 15px;
+      font-weight: 600;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    #switch-button,
-    #fullscreen-button {
+    #status-detail {
+      font-size: 12px;
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #status-detail:empty {
+      display: none;
+    }
+
+    /* --- アイコンボタン共通 --- */
+    .icon-button {
       flex: 0 0 auto;
-      padding: 6px 12px;
-      background: rgba(255, 255, 255, 0.12);
-      color: #eee;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      border-radius: 8px;
-      font-size: 13px;
-      /* スマホでの誤タップ・ダブルタップズームを防ぎつつ、押しやすいサイズを確保する */
-      touch-action: manipulation;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      touch-action: manipulation; /* 誤タップ・ダブルタップズーム防止 */
+    }
+    .icon-button:active {
+      background: rgba(255, 255, 255, 0.2);
     }
     #fullscreen-button {
       position: fixed;
       z-index: 10;
-      right: calc(12px + env(safe-area-inset-right));
-      bottom: calc(12px + env(safe-area-inset-bottom));
-      padding: 10px 14px;
-      background: rgba(0, 0, 0, 0.6);
-      font-size: 14px;
+      right: calc(14px + env(safe-area-inset-right));
+      bottom: calc(14px + env(safe-area-inset-bottom));
+      background: rgba(0, 0, 0, 0.55);
     }
+
+    /* --- 中央メッセージ(接続中・オンボーディング等) --- */
+    #center-message {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 32px;
+      text-align: center;
+      pointer-events: none;
+    }
+    #center-message[hidden] {
+      display: none;
+    }
+    #center-icon {
+      color: var(--text-secondary);
+    }
+    #center-icon.spin svg {
+      animation: spin 1.2s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #center-text {
+      margin: 0;
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 26em;
+    }
+    #center-action {
+      pointer-events: auto;
+    }
+
+    /* --- ボタン共通スタイル --- */
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 14px;
+      touch-action: manipulation;
+    }
+    .btn:active {
+      background: var(--surface-2-hover);
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .btn-primary:active {
+      filter: brightness(0.92);
+    }
+    .btn-block {
+      width: 100%;
+    }
+
+    /* --- 配信元切り替えダイアログ --- */
     dialog#source-dialog {
       border: none;
-      border-radius: 10px;
-      padding: 16px;
-      background: #1a1a1a;
-      color: #eee;
-      width: min(360px, 90vw);
-      max-height: 80vh;
-      overflow-y: auto;
+      border-radius: 14px;
+      padding: 0;
+      background: var(--surface);
+      color: var(--text);
+      width: min(380px, 92vw);
+      max-height: 85vh;
     }
     dialog#source-dialog::backdrop {
       background: rgba(0, 0, 0, 0.6);
     }
-    dialog#source-dialog h2 {
-      margin: 0 0 8px;
+    #dialog-inner {
+      display: flex;
+      flex-direction: column;
+      max-height: 85vh;
+    }
+    #dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      flex: 0 0 auto;
+    }
+    #dialog-header h2 {
+      margin: 0;
       font-size: 16px;
     }
-    #current-room-label {
-      font-size: 12px;
-      color: #aaa;
-      margin: 0 0 12px;
-      word-break: break-all;
+    #dialog-body {
+      padding: 14px 16px 16px;
+      overflow-y: auto;
     }
     #source-list {
       list-style: none;
@@ -98,86 +243,163 @@
       gap: 6px;
     }
     .source-empty {
-      color: #999;
+      color: var(--text-secondary);
       font-size: 13px;
-      padding: 4px;
+      padding: 12px 4px;
+      text-align: center;
     }
     .source-item {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 8px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      padding: 4px 4px 4px 10px;
+      background: var(--surface-2);
+      border-radius: 10px;
+      padding: 4px 4px 4px 6px;
+    }
+    .source-item.is-active {
+      outline: 1px solid var(--accent);
+    }
+    .source-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: transparent;
+      margin-left: 6px;
+    }
+    .source-item.is-active .source-dot {
+      background: var(--success);
     }
     .source-select {
       flex: 1;
       text-align: left;
       background: none;
       border: none;
-      color: #eee;
+      color: var(--text);
       font-size: 14px;
-      padding: 6px 4px;
+      padding: 10px 4px;
       touch-action: manipulation;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .source-remove {
       flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
       background: none;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: #eee;
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12px;
+      border: none;
+      color: var(--text-secondary);
+      border-radius: 8px;
       touch-action: manipulation;
     }
+    .source-remove:active {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+
+    #add-source-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
     #add-source-form {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    #add-source-form[hidden] {
+      display: none;
+    }
+    #add-source-form label {
+      font-size: 12px;
+      color: var(--text-secondary);
     }
     #add-source-form input {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      background: #111;
-      color: #eee;
-      font-size: 14px;
-    }
-    #add-source-form button,
-    #close-dialog-button {
-      padding: 8px;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      background: rgba(255, 255, 255, 0.1);
-      color: #eee;
-      font-size: 14px;
-      touch-action: manipulation;
-    }
-    #close-dialog-button {
-      margin-top: 10px;
       width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+    }
+    #add-source-hint {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+    #add-source-status {
+      font-size: 13px;
+      color: var(--success);
+      min-height: 1.3em;
     }
   </style>
 </head>
 <body>
-  <div id="status-bar">
-    <span id="status">初期化中...</span>
-    <button id="switch-button" type="button">配信元</button>
+  <div id="status-bar" data-state="idle">
+    <div id="status-summary">
+      <span id="status-dot"></span>
+      <div id="status-text-group">
+        <span id="camera-name">TMN 見守りカメラ</span>
+        <span id="status-detail"></span>
+      </div>
+    </div>
+    <button id="switch-button" type="button" class="icon-button" aria-label="配信元を切り替え" title="配信元を切り替え">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg>
+    </button>
   </div>
+
   <video id="remote-video" autoplay playsinline muted></video>
-  <button id="fullscreen-button" type="button" hidden>全画面</button>
+
+  <div id="center-message" hidden>
+    <div id="center-icon"></div>
+    <p id="center-text"></p>
+    <button id="center-action" type="button" class="btn btn-primary" hidden></button>
+  </div>
+
+  <button id="fullscreen-button" type="button" class="icon-button" hidden aria-label="全画面表示" title="全画面表示"></button>
 
   <dialog id="source-dialog">
-    <h2>配信元の切り替え</h2>
-    <p id="current-room-label"></p>
-    <ul id="source-list"></ul>
-    <form id="add-source-form">
-      <input id="add-source-label" type="text" placeholder="名前(例: リビング)" required />
-      <input id="add-source-room" type="text" placeholder="ルームトークン" required />
-      <button type="submit">この配信元を保存</button>
-    </form>
-    <button id="close-dialog-button" type="button">閉じる</button>
+    <div id="dialog-inner">
+      <div id="dialog-header">
+        <h2>配信元を切り替え</h2>
+        <button id="close-dialog-button" type="button" class="icon-button" aria-label="閉じる" title="閉じる">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="dialog-body">
+        <ul id="source-list"></ul>
+
+        <button id="add-source-toggle" type="button" class="btn btn-block">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          カメラを追加
+        </button>
+
+        <form id="add-source-form" hidden>
+          <div>
+            <label for="add-source-label">名前</label>
+            <input id="add-source-label" type="text" placeholder="例: リビング" required />
+          </div>
+          <div>
+            <label for="add-source-room">ルームトークン</label>
+            <input id="add-source-room" type="text" placeholder="配信アプリに設定したトークン" required />
+          </div>
+          <p id="add-source-hint">配信アプリ(Caster)側の設定画面に表示されているトークンを入力してください。</p>
+          <p id="add-source-status" aria-live="polite"></p>
+          <button type="submit" class="btn btn-primary btn-block">保存</button>
+        </form>
+      </div>
+    </div>
   </dialog>
 
   <script src="config.js"></script>
