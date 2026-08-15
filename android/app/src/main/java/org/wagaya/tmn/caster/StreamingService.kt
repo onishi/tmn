@@ -1,4 +1,4 @@
-package com.tmn.caster
+package org.wagaya.tmn.caster
 
 import android.app.Notification
 import android.app.NotificationChannel
