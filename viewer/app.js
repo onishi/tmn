@@ -2,6 +2,7 @@ const params = new URLSearchParams(location.search);
 const room = params.get("room");
 const statusEl = document.getElementById("status");
 const videoEl = document.getElementById("remote-video");
+const fullscreenButton = document.getElementById("fullscreen-button");
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 15000;
@@ -12,6 +13,25 @@ let currentPc = null;
 
 function setStatus(text) {
   statusEl.textContent = text;
+}
+
+// スマホでは映像を画面いっぱいに表示したいことが多いため、全画面ボタンを用意する。
+// (Fullscreen APIはユーザー操作が起点でないと呼び出せないため、自動全画面化はしない)
+if (document.fullscreenEnabled) {
+  fullscreenButton.hidden = false;
+  fullscreenButton.addEventListener("click", () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      videoEl.requestFullscreen().catch(() => {});
+    }
+  });
+} else if (typeof videoEl.webkitEnterFullscreen === "function") {
+  // iOS Safariは要素の汎用Fullscreen APIを持たず、<video>専用のネイティブ全画面のみ対応
+  fullscreenButton.hidden = false;
+  fullscreenButton.addEventListener("click", () => {
+    videoEl.webkitEnterFullscreen();
+  });
 }
 
 function scheduleReconnect() {
