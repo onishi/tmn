@@ -18,7 +18,7 @@
 
 ## 事前設定
 
-`app/src/main/java/com/tmn/caster/Config.kt` を編集し、デプロイ済みシグナリングWorkerのURLと
+`app/src/main/java/org/wagaya/tmn/caster/Config.kt` を編集し、デプロイ済みシグナリングWorkerのURLと
 Viewerと共有するルームトークンを設定する。
 
 ```kotlin

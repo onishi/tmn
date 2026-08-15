@@ -52,7 +52,7 @@ npx wrangler pages deploy . --project-name=tmn-viewer
 
 Android SDKが利用可能な環境(Android Studio等)で実施する。
 
-1. `android/app/src/main/java/com/tmn/caster/Config.kt` に `SIGNALING_URL` と `ROOM_TOKEN`(2で発行した値)を設定。ACCESS_PASSWORDを設定した場合は `ACCESS_PASSWORD` にも同じ値を設定
+1. `android/app/src/main/java/org/wagaya/tmn/caster/Config.kt` に `SIGNALING_URL` と `ROOM_TOKEN`(2で発行した値)を設定。ACCESS_PASSWORDを設定した場合は `ACCESS_PASSWORD` にも同じ値を設定
 2. `./gradlew assembleDebug`(または Android Studio でビルド)
 3. 配信用スマホにインストールし、カメラ権限を許可
 4. バッテリー最適化除外・スリープなし設定を確認

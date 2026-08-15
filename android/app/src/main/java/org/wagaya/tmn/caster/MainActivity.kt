@@ -1,4 +1,4 @@
-package com.tmn.caster
+package org.wagaya.tmn.caster
 
 import android.Manifest
 import android.content.Intent
