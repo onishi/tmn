@@ -36,41 +36,41 @@ function waitFor(received, predicate, timeoutMs = 3000) {
 }
 
 async function main() {
-  const broadcaster = await connect("broadcaster");
-  console.log("broadcaster connected");
+  const caster = await connect("caster");
+  console.log("caster connected");
 
   const viewer = await connect("viewer");
   console.log("viewer connected");
 
-  // 1. viewer接続をトリガーにbroadcasterへ通知が飛ぶこと
-  const joined = await waitFor(broadcaster.received, (m) => m.type === "viewer-joined");
-  console.log("OK: broadcaster received", joined);
+  // 1. viewer接続をトリガーにcasterへ通知が飛ぶこと
+  const joined = await waitFor(caster.received, (m) => m.type === "viewer-joined");
+  console.log("OK: caster received", joined);
 
-  // 2. broadcaster -> viewer への offer 中継
-  broadcaster.ws.send(JSON.stringify({ type: "offer", sdp: "fake-sdp-offer" }));
+  // 2. caster -> viewer への offer 中継
+  caster.ws.send(JSON.stringify({ type: "offer", sdp: "fake-sdp-offer" }));
   const offer = await waitFor(viewer.received, (m) => m.type === "offer");
   console.log("OK: viewer received offer", offer);
 
-  // 3. viewer -> broadcaster への answer 中継
+  // 3. viewer -> caster への answer 中継
   viewer.ws.send(JSON.stringify({ type: "answer", sdp: "fake-sdp-answer" }));
-  const answer = await waitFor(broadcaster.received, (m) => m.type === "answer");
-  console.log("OK: broadcaster received answer", answer);
+  const answer = await waitFor(caster.received, (m) => m.type === "answer");
+  console.log("OK: caster received answer", answer);
 
   // 4. ICE candidate 双方向中継
-  broadcaster.ws.send(JSON.stringify({ type: "ice-candidate", candidate: "cand-from-broadcaster" }));
-  await waitFor(viewer.received, (m) => m.type === "ice-candidate" && m.candidate === "cand-from-broadcaster");
-  console.log("OK: viewer received ice-candidate from broadcaster");
+  caster.ws.send(JSON.stringify({ type: "ice-candidate", candidate: "cand-from-caster" }));
+  await waitFor(viewer.received, (m) => m.type === "ice-candidate" && m.candidate === "cand-from-caster");
+  console.log("OK: viewer received ice-candidate from caster");
 
   viewer.ws.send(JSON.stringify({ type: "ice-candidate", candidate: "cand-from-viewer" }));
-  await waitFor(broadcaster.received, (m) => m.type === "ice-candidate" && m.candidate === "cand-from-viewer");
-  console.log("OK: broadcaster received ice-candidate from viewer");
+  await waitFor(caster.received, (m) => m.type === "ice-candidate" && m.candidate === "cand-from-viewer");
+  console.log("OK: caster received ice-candidate from viewer");
 
-  // 5. viewer切断でbroadcasterにviewer-leftが通知される
+  // 5. viewer切断でcasterにviewer-leftが通知される
   viewer.ws.close();
-  await waitFor(broadcaster.received, (m) => m.type === "viewer-left");
-  console.log("OK: broadcaster received viewer-left");
+  await waitFor(caster.received, (m) => m.type === "viewer-left");
+  console.log("OK: caster received viewer-left");
 
-  broadcaster.ws.close();
+  caster.ws.close();
   console.log("\nALL CHECKS PASSED");
   process.exit(0);
 }

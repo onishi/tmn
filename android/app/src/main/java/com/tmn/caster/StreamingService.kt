@@ -1,4 +1,4 @@
-package com.tmn.broadcaster
+package com.tmn.caster
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -73,7 +73,7 @@ class StreamingService : Service(), SignalingClient.Listener {
     }
 
     private fun signalingUrl(): String {
-        val base = "${Config.SIGNALING_URL}/room/${Config.ROOM_TOKEN}?role=broadcaster"
+        val base = "${Config.SIGNALING_URL}/room/${Config.ROOM_TOKEN}?role=caster"
         return if (Config.ACCESS_PASSWORD.isNotEmpty()) {
             "$base&password=${Uri.encode(Config.ACCESS_PASSWORD)}"
         } else {

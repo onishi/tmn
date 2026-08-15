@@ -46,10 +46,10 @@ python3 -m http.server 5500
 ```
 
 `../signaling` を `npm run dev` でローカル起動し、`config.js` の `signalingUrl` を
-`ws://localhost:8787` に一時的に変更すれば、`test/broadcaster-mock.html`
-(getUserMediaで模擬カメラ映像を配信するテスト専用ページ)と組み合わせてWebRTC疎通を確認できる。
+`ws://localhost:8787` に一時的に変更すれば、`test/caster-mock.html`
+(getUserMediaで模擬カメラ映像を配信するCaster役のテスト専用ページ)と組み合わせてWebRTC疎通を確認できる。
 
 ```
 http://localhost:5500/index.html?room=test-room-token-1234
-http://localhost:5500/test/broadcaster-mock.html?room=test-room-token-1234&signaling=ws://localhost:8787
+http://localhost:5500/test/caster-mock.html?room=test-room-token-1234&signaling=ws://localhost:8787
 ```

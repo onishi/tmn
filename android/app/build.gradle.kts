@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.tmn.broadcaster"
+    namespace = "com.tmn.caster"
     // Android 16(API 36)まで対応。API 37(Android 17)はACCESS_LOCAL_NETWORK権限が
     // 必須化されWebRTCのローカルP2P接続に影響しうるため、様子を見て別途対応する
     // (docs/android-14-17-support.md参照)。targetSdkが36以下でもAndroid 17端末上では
@@ -12,7 +12,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.tmn.broadcaster"
+        applicationId = "com.tmn.caster"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

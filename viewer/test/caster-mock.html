@@ -2,15 +2,15 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>broadcaster mock (test only)</title>
+  <title>caster mock (test only)</title>
 </head>
 <body>
   <!--
-    実際のAndroid配信アプリの代わりに、ブラウザのgetUserMedia(fakeカメラ)で
+    実際のAndroid配信アプリ(Caster)の代わりに、ブラウザのgetUserMedia(fakeカメラ)で
     viewer/app.js とのWebRTC疎通を検証するためのテスト専用ページ。
     ?room=<トークン>&signaling=<wsUrl> をクエリで指定する。
-    viewer側の再接続テストに対応するため、シグナリングWSが切れたら簡易的に再接続する
-    (本番のAndroidアプリの自動再接続はplan.md M6で別途実装する)。
+    Viewer側の再接続テストに対応するため、シグナリングWSが切れたら簡易的に再接続する
+    (本番のAndroidアプリ(Caster)の自動再接続はplan.md M6で別途実装する)。
   -->
   <script>
     const params = new URLSearchParams(location.search);
@@ -23,7 +23,7 @@
 
     function createPeerConnection(ws) {
       // viewer-joinedを受けるたびに、既存のPeerConnectionを破棄して作り直す
-      // (視聴側の再接続に対応するため。StreamingService.ktの挙動と合わせている)
+      // (Viewer側の再接続に対応するため。StreamingService.ktの挙動と合わせている)
       if (pc) {
         pc.close();
       }
@@ -43,7 +43,7 @@
 
     function connect() {
       const passwordQuery = accessPassword ? `&password=${encodeURIComponent(accessPassword)}` : "";
-      const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=broadcaster${passwordQuery}`;
+      const wsUrl = `${signalingUrl}/room/${encodeURIComponent(room)}?role=caster${passwordQuery}`;
       const ws = new WebSocket(wsUrl);
 
       ws.addEventListener("message", async (event) => {

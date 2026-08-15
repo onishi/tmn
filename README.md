@@ -10,11 +10,11 @@
 
 | 名称 | 説明 | 対応するコード上の識別子 |
 |---|---|---|
-| **Broadcaster**(配信アプリ) | 古いAndroidスマホにインストールし、カメラ映像を配信するネイティブアプリ | ディレクトリ `android/`、パッケージ `com.tmn.broadcaster`、シグナリングプロトコルの `role=broadcaster` |
+| **Caster**(配信アプリ) | 古いAndroidスマホにインストールし、カメラ映像を配信するネイティブアプリ | ディレクトリ `android/`、パッケージ `com.tmn.caster`、シグナリングプロトコルの `role=caster` |
 | **Viewer**(視聴アプリ) | 外出先のブラウザから配信映像を見るための静的Webアプリ | ディレクトリ `viewer/`、シグナリングプロトコルの `role=viewer` |
 
-「配信用スマホ」「配信端末」はBroadcasterアプリをインストールする**物理的なハードウェア**を指し、
-Broadcaster(アプリそのもの)とは区別して使う。
+「配信用スマホ」「配信端末」はCasterアプリをインストールする**物理的なハードウェア**を指し、
+Caster(アプリそのもの)とは区別して使う。
 
 ---
 
@@ -23,7 +23,7 @@ Broadcaster(アプリそのもの)とは区別して使う。
 ### 1.1 構成図
 
 ```
-[Broadcaster(配信アプリ、Androidネイティブアプリ)]
+[Caster(配信アプリ、Androidネイティブアプリ)]
       │  WebRTC(STUN: stun.cloudflare.com)
       ▼
 [Cloudflare Realtime TURN](NAT越えが必要な時だけ経由)
@@ -35,13 +35,13 @@ Broadcaster(アプリそのもの)とは区別して使う。
 [Cloudflare Workers + Durable Objects]
 ```
 
-全構成要素をCloudflareに統合することで、契約先・管理画面を1つにまとめられる。配信端末はAndroidを採用し、Broadcasterはネイティブ(Kotlin)で実装する(フォアグラウンドサービスにより画面消灯状態でも安定して配信を継続できるため。PWAは開発は手軽だが、バックグラウンド動作の制約が大きく監視カメラ用途には不向き)。
+全構成要素をCloudflareに統合することで、契約先・管理画面を1つにまとめられる。配信端末はAndroidを採用し、Casterはネイティブ(Kotlin)で実装する(フォアグラウンドサービスにより画面消灯状態でも安定して配信を継続できるため。PWAは開発は手軽だが、バックグラウンド動作の制約が大きく監視カメラ用途には不向き)。
 
 ### 1.2 コンポーネント
 
 | コンポーネント | 役割 | 技術 |
 |---|---|---|
-| Broadcaster(配信アプリ) | カメラ映像取得・配信 | Androidネイティブアプリ (Kotlin, CameraX, WebRTC Android SDK, Foreground Service) |
+| Caster(配信アプリ) | カメラ映像取得・配信 | Androidネイティブアプリ (Kotlin, CameraX, WebRTC Android SDK, Foreground Service) |
 | Viewer(視聴アプリ) | 映像受信・表示 | 静的Webページ、Cloudflare Pagesでホスティング |
 | シグナリング | 接続情報の仲介 | Cloudflare Workers + Durable Objects(WebSocket) |
 | NAT越え(STUN) | P2P接続確立の第一段階 | stun.cloudflare.com(無料・無制限) |
@@ -50,9 +50,9 @@ Broadcaster(アプリそのもの)とは区別して使う。
 ### 1.3 機能スコープ
 
 **含む:**
-- カメラ映像の一方向配信(Broadcaster → Viewer)
+- カメラ映像の一方向配信(Caster → Viewer)
 - 1対1接続(視聴者1人を想定)
-- BroadcasterはAndroid端末にインストールし、Foreground Serviceとして常時起動
+- CasterはAndroid端末にインストールし、Foreground Serviceとして常時起動
 - **オンデマンド配信**: 平常時はシグナリング用WebSocket接続のみ維持し待機。視聴者がアクセスしてきたタイミングでシグナリング経由の通知を受け、カメラ起動・PeerConnection確立・エンコードを開始する(常時配信ではない)
 - 画面消灯・バックグラウンドでも配信継続(Foreground Service + バッテリー最適化除外設定)
 
@@ -75,11 +75,11 @@ Broadcaster(アプリそのもの)とは区別して使う。
 ### 1.5 開発ステップ
 
 1. Cloudflareアカウント作成、Workers/Pages/Realtimeを有効化
-2. シグナリング用Workerの実装(Durable Objectsでルームごとの接続情報をWebSocket経由で中継。Viewerの接続をトリガーにBroadcasterへ「配信開始」通知を送る仕組みを含む)
-3. Broadcaster(配信Androidアプリ)実装(Android Studio, Kotlin。シグナリングWorkerとのWebSocket接続を常時維持し、視聴リクエスト受信時にCameraXでカメラ取得 → WebRTC Android SDKでRTCPeerConnection作成 → Offer生成、という流れをオンデマンドで実行。Foreground Serviceとして起動し画面消灯・バックグラウンドでも待機・配信を継続)
+2. シグナリング用Workerの実装(Durable Objectsでルームごとの接続情報をWebSocket経由で中継。Viewerの接続をトリガーにCasterへ「配信開始」通知を送る仕組みを含む)
+3. Caster(配信Androidアプリ)実装(Android Studio, Kotlin。シグナリングWorkerとのWebSocket接続を常時維持し、視聴リクエスト受信時にCameraXでカメラ取得 → WebRTC Android SDKでRTCPeerConnection作成 → Offer生成、という流れをオンデマンドで実行。Foreground Serviceとして起動し画面消灯・バックグラウンドでも待機・配信を継続)
 4. Viewer(視聴Webアプリ)実装(シグナリングWorkerに接続要求を送信 → Answer取得 → 映像受信・表示)
 5. STUN(stun.cloudflare.com)を優先設定、接続できない場合のみCloudflare Realtime TURNにフォールバック(ICEエージェントが候補生成・接続性チェックを通じて自動的に行うため、アプリ側で手動制御する必要はない)
-6. Broadcasterをビルド・署名し、配信用スマホにインストール。常時電源に接続した状態で設置し、端末のスリープ設定・バッテリー最適化除外も設定
+6. Casterをビルド・署名し、配信用スマホにインストール。常時電源に接続した状態で設置し、端末のスリープ設定・バッテリー最適化除外も設定
 7. ViewerをCloudflare Pagesにデプロイ
 
 ### 1.6 想定コスト
@@ -103,7 +103,7 @@ Broadcaster(アプリそのもの)とは区別して使う。
 
 ### フェーズ3: 見守り機能の強化
 
-- **動体検知・通知**:Broadcaster側でフレーム差分を検出しPush通知(Firebase Cloud Messaging)。動体検知時のみ配信を自動開始する運用にすれば、オンデマンド配信方針とも自然に統合できる
+- **動体検知・通知**:Caster側でフレーム差分を検出しPush通知(Firebase Cloud Messaging)。動体検知時のみ配信を自動開始する運用にすれば、オンデマンド配信方針とも自然に統合できる
 - **録画・クリップ保存**:一定時間のバッファを保持し、イベント前後を自動保存(Cloudflare R2やFirebase Storage)
 - **音声対応**:双方向音声で呼びかけ機能
 - **複数カメラ対応**:古いスマホを複数台設置し、切り替えて閲覧
@@ -111,7 +111,7 @@ Broadcaster(アプリそのもの)とは区別して使う。
 ### フェーズ4: 本格運用・拡張
 
 - **専用サーバー移行の検討**:視聴者が大幅に増えTURN従量課金が無視できなくなった場合、Cloudflare Realtime SFUへの本格移行、またはRaspberry Pi + nginx-rtmp等の自宅サーバー案も比較検討
-- **BroadcasterのiOS対応検討**:必要であればiOS版もKotlin Multiplatform等で追加開発
+- **CasterのiOS対応検討**:必要であればiOS版もKotlin Multiplatform等で追加開発
 - **ダッシュボード化**:温度・給餌タイミングなど他センサーとの統合
 - **家族・複数デバイス共有**:招待リンクによるマルチユーザー対応
 
@@ -130,7 +130,7 @@ Broadcaster(アプリそのもの)とは区別して使う。
 
 ## 4. 参考技術スタック一覧
 
-- **Broadcaster**: Kotlin, CameraX, WebRTC Android SDK, Foreground Service, WorkManager(再接続制御)
+- **Caster**: Kotlin, CameraX, WebRTC Android SDK, Foreground Service, WorkManager(再接続制御)
 - **Viewer**: WebRTC(ブラウザ標準API)
 - **シグナリング**: Cloudflare Workers + Durable Objects(WebSocket)
 - **STUN/TURN**: Cloudflare Realtime(stun.cloudflare.com、TURNは従量課金・月1,000GB無料)
@@ -153,7 +153,7 @@ Broadcaster(アプリそのもの)とは区別して使う。
 |---|---|
 | [`signaling/`](./signaling) | シグナリングWorker(Cloudflare Workers + Durable Objects) |
 | [`viewer/`](./viewer) | Viewer(視聴アプリ、静的ページ) |
-| [`android/`](./android) | Broadcaster(配信アプリ、Kotlin、Android SDK未検証) |
+| [`android/`](./android) | Caster(配信アプリ、Kotlin、Android SDK未検証) |
 
 デプロイ手順は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。設計検討メモは [`docs/`](./docs) に置く
 (例: [複数視聴者対応の設計検討](./docs/multi-viewer-design.md)、
