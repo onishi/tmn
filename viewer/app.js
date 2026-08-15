@@ -5,6 +5,7 @@ const statusBarEl = document.getElementById("status-bar");
 const statusDotEl = document.getElementById("status-dot");
 const cameraNameEl = document.getElementById("camera-name");
 const statusDetailEl = document.getElementById("status-detail");
+const detectionBadgeEl = document.getElementById("detection-badge");
 
 const centerMessageEl = document.getElementById("center-message");
 const centerIconEl = document.getElementById("center-icon");
@@ -54,6 +55,42 @@ const ICONS = {
     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
 };
 
+// --- 猫・人の検知状態(視聴を開始する前でも確認できる) ---
+//
+// Casterは検知結果をシグナリングWorkerへ送っており、Room(Durable Object)が直近の
+// 1件をキャッシュしている。視聴用のWebSocketを開かなくても GET /room/<token>/status
+// で確認できるため、配信元一覧の各カメラや現在の配信元について「視聴を始める前に」
+// 検知状況を確認できる。
+
+function detectionStatusUrl(room) {
+  const { signalingUrl, accessPassword } = window.TMN_CONFIG;
+  const httpBase = signalingUrl.replace(/^wss:\/\//, "https://").replace(/^ws:\/\//, "http://");
+  const passwordQuery = accessPassword ? `?password=${encodeURIComponent(accessPassword)}` : "";
+  return `${httpBase}/room/${encodeURIComponent(room)}/status${passwordQuery}`;
+}
+
+async function fetchDetectionStatus(room) {
+  try {
+    const res = await fetch(detectionStatusUrl(room));
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null; // オフライン・未デプロイ環境などでは静かに諦める(視聴自体は妨げない)
+  }
+}
+
+function detectionBadgeText(status) {
+  if (!status || (!status.hasCat && !status.hasPerson)) return "";
+  if (status.hasCat && status.hasPerson) return "🐱🧍";
+  if (status.hasCat) return "🐱";
+  return "🧍";
+}
+
+/** 現在の配信元(ステータスバー)の検知バッジを更新する */
+function setDetectionBadge(status) {
+  detectionBadgeEl.textContent = detectionBadgeText(status);
+}
+
 // --- 配信元(ルームトークン)の保存・切り替え ---
 
 function loadSources() {
@@ -102,6 +139,14 @@ function renderSources() {
       sourceDialog.close();
     });
     li.appendChild(selectButton);
+
+    const badge = document.createElement("span");
+    badge.className = "source-badge";
+    li.appendChild(badge);
+    // 視聴を始める前に(=WebSocketを開かずに)、このカメラの直近の検知結果を確認する
+    fetchDetectionStatus(source.room).then((status) => {
+      badge.textContent = detectionBadgeText(status);
+    });
 
     const dot = document.createElement("span");
     dot.className = "source-dot";
@@ -290,6 +335,7 @@ function teardownPeerConnection() {
 
 function connect() {
   if (!currentRoom) {
+    setDetectionBadge(null);
     setState("idle", {
       centerText: "見守りカメラが設定されていません。カメラを追加すると視聴を開始できます。",
       action: {
@@ -299,6 +345,14 @@ function connect() {
     });
     return;
   }
+
+  // 動画のWebSocket接続とは独立に、直近の検知結果だけ先に確認しておく
+  // (接続に多少時間がかかっても、猫・人がいたかどうかはすぐ分かる)
+  setDetectionBadge(null);
+  const roomAtFetchTime = currentRoom;
+  fetchDetectionStatus(roomAtFetchTime).then((status) => {
+    if (currentRoom === roomAtFetchTime) setDetectionBadge(status);
+  });
 
   const { signalingUrl, accessPassword } = window.TMN_CONFIG;
   const passwordQuery = accessPassword ? `&password=${encodeURIComponent(accessPassword)}` : "";
@@ -366,6 +420,9 @@ function connect() {
       ws.send(JSON.stringify({ type: "answer", sdp: answer.sdp }));
     } else if (message.type === "ice-candidate") {
       await pc.addIceCandidate(message.candidate);
+    } else if (message.type === "detection-status") {
+      // 視聴中にCasterから新しい検知結果が届いた場合、リアルタイムでバッジを更新する
+      setDetectionBadge({ hasCat: message.hasCat, hasPerson: message.hasPerson });
     }
   });
 
