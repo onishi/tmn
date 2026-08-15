@@ -12,7 +12,10 @@ import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.webrtc.Camera2Enumerator
@@ -56,7 +59,18 @@ class StreamingService : Service(), SignalingClient.Listener {
     private var catPersonDetector: CatPersonDetector? = null
     private var lastDetectionAtMs = 0L
 
-    /** 配信中のみ、間引いたフレームを猫・人検知に回す(常時推論はしない) */
+    // 待機中(無配信)でも、たまにカメラを短時間だけ起動して検知を行うためのループとリソース
+    private var idleDetectionJob: Job? = null
+    private var idleVideoCapturer: VideoCapturer? = null
+    private var idleSurfaceTextureHelper: SurfaceTextureHelper? = null
+    private var idleVideoSource: VideoSource? = null
+    private var idleVideoTrack: VideoTrack? = null
+
+    /**
+     * 配信中・待機中どちらの経路からも共有して使う検知シンク。間引いたフレームだけ
+     * 猫・人検知に回す(常時推論はしない)。結果は [onDetectionResult] でその時点の
+     * 配信状態(peerConnectionの有無)に応じて振り分けられる。
+     */
     private val detectionSink = VideoSink { frame ->
         val detector = catPersonDetector
         val now = SystemClock.elapsedRealtime()
@@ -78,6 +92,13 @@ class StreamingService : Service(), SignalingClient.Listener {
 
         signalingClient = SignalingClient(signalingUrl(), this)
         signalingClient.connect()
+
+        idleDetectionJob = scope.launch {
+            while (isActive) {
+                delay(IDLE_DETECTION_INTERVAL_MS)
+                runIdleDetectionCycle()
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -85,12 +106,69 @@ class StreamingService : Service(), SignalingClient.Listener {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        idleDetectionJob?.cancel()
+        stopIdleDetectionCycle()
         stopStreaming()
         catPersonDetector?.close()
         signalingClient.close()
         peerConnectionFactory.dispose()
         eglBase.release()
         super.onDestroy()
+    }
+
+    /**
+     * 待機中に短時間だけカメラを起動し、検知シンクにフレームを流す1サイクル分。
+     * 視聴者接続([startStreaming])が同時に起きた場合は、そちらが[stopIdleDetectionCycle]で
+     * このサイクルのカメラを横取りして即座に手放す(同一カメラを二重に開けないため)。
+     */
+    private suspend fun runIdleDetectionCycle() {
+        if (peerConnection != null) return // 配信中は専用の経路で既に検知しているのでスキップ
+        if (catPersonDetector == null) return
+
+        val capturer = createCameraCapturer() ?: return
+        idleVideoCapturer = capturer
+
+        val helper = SurfaceTextureHelper.create("IdleDetectThread", eglBase.eglBaseContext)
+        idleSurfaceTextureHelper = helper
+
+        val source = peerConnectionFactory.createVideoSource(false)
+        idleVideoSource = source
+
+        val track = peerConnectionFactory.createVideoTrack("tmn-idle-detect", source)
+        idleVideoTrack = track
+        track.addSink(detectionSink)
+
+        capturer.initialize(helper, applicationContext, source.capturerObserver)
+        capturer.startCapture(1280, 720, 30)
+
+        delay(IDLE_DETECTION_CAPTURE_DURATION_MS)
+
+        // このdelay中にstartStreaming()に横取りされていた場合は、既にstopIdleDetectionCycle()で
+        // 片付け済み・フィールドは別インスタンスかnullになっているため、二重解放しない
+        if (idleVideoCapturer === capturer) {
+            stopIdleDetectionCycle()
+        }
+    }
+
+    private fun stopIdleDetectionCycle() {
+        idleVideoTrack?.removeSink(detectionSink)
+        idleVideoTrack = null
+
+        idleVideoCapturer?.let {
+            try {
+                it.stopCapture()
+            } catch (e: InterruptedException) {
+                Log.w(TAG, "idle capture stop interrupted", e)
+            }
+            it.dispose()
+        }
+        idleVideoCapturer = null
+
+        idleVideoSource?.dispose()
+        idleVideoSource = null
+
+        idleSurfaceTextureHelper?.dispose()
+        idleSurfaceTextureHelper = null
     }
 
     private fun createCatPersonDetector(): CatPersonDetector? {
@@ -104,12 +182,21 @@ class StreamingService : Service(), SignalingClient.Listener {
     }
 
     private fun onDetectionResult(result: CatPersonDetector.CatPersonDetectionResult) {
-        if (peerConnection == null) return // 配信終了後に届いた結果は無視する
-        val text = when {
-            result.hasCat && result.hasPerson -> getString(R.string.notification_text_streaming_cat_and_person)
-            result.hasCat -> getString(R.string.notification_text_streaming_cat)
-            result.hasPerson -> getString(R.string.notification_text_streaming_person)
-            else -> getString(R.string.notification_text_streaming)
+        val text = if (peerConnection != null) {
+            when {
+                result.hasCat && result.hasPerson -> getString(R.string.notification_text_streaming_cat_and_person)
+                result.hasCat -> getString(R.string.notification_text_streaming_cat)
+                result.hasPerson -> getString(R.string.notification_text_streaming_person)
+                else -> getString(R.string.notification_text_streaming)
+            }
+        } else {
+            // 配信中でなければ、待機中の見回りサイクルから来た結果として扱う
+            when {
+                result.hasCat && result.hasPerson -> getString(R.string.notification_text_idle_cat_and_person)
+                result.hasCat -> getString(R.string.notification_text_idle_cat)
+                result.hasPerson -> getString(R.string.notification_text_idle_person)
+                else -> getString(R.string.notification_text_idle)
+            }
         }
         updateNotification(text)
     }
@@ -167,6 +254,10 @@ class StreamingService : Service(), SignalingClient.Listener {
     // --- streaming pipeline ---
 
     private fun startStreaming() {
+        // 待機中の見回り検知サイクルがカメラを使用中であれば、即座に横取りして手放す
+        // (同一カメラをCamera2で二重に開くことはできないため)
+        stopIdleDetectionCycle()
+
         // 視聴側が再接続してきた場合も含め、常に新しいPeerConnectionで配信をやり直す
         if (peerConnection != null) stopStreaming()
 
@@ -333,5 +424,15 @@ class StreamingService : Service(), SignalingClient.Listener {
 
         // 猫・人検知の実行間隔。毎フレーム推論するとバッテリー消費が大きいため間引く
         private const val DETECTION_INTERVAL_MS = 30000L
+
+        // 待機中(無配信)でもカメラを起動して見回る間隔。WorkManagerの最短間隔(15分)に
+        // 縛られる理由は無い(このサービス自体が常時起動しているため)が、バッテリー・発熱を
+        // 抑えるため15分に1回程度に留める
+        private const val IDLE_DETECTION_INTERVAL_MS = 15 * 60 * 1000L
+
+        // 待機中の見回りでカメラを起動しておく時間。古いスマホではカメラの起動(Camera2の
+        // セッション確立)自体に1秒前後かかることがあるため、最低1フレームは確実に
+        // 検知シンクへ届くよう、なるべく短くしつつも余裕を持たせる
+        private const val IDLE_DETECTION_CAPTURE_DURATION_MS = 5000L
     }
 }

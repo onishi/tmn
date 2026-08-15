@@ -15,7 +15,7 @@
 | `SdpObserverAdapter.kt` | `org.webrtc.SdpObserver` の必要メソッドのみoverrideするためのアダプタ |
 | `StreamingService.kt` | 常時起動のForeground Service。WS常時接続、`viewer-joined`受信でカメラ起動・Offer送信、`viewer-left`で停止するオンデマンド配信ロジック本体 |
 | `MainActivity.kt` | カメラ権限リクエスト、バッテリー最適化除外の案内、サービス起動 |
-| `CatPersonDetector.kt` | MediaPipe Tasks Visionによる猫・人検知(配信中のみ、30秒間隔で実行) |
+| `CatPersonDetector.kt` | MediaPipe Tasks Visionによる猫・人検知(配信中は30秒間隔、待機中も15分に1回の「見回り」で実行) |
 
 ## 事前設定
 
@@ -43,9 +43,11 @@ Android 14〜17対応の詳しい検討経緯は
 
 ## 猫・人検知
 
-配信中のカメラ映像に猫・人が映っているかをオンデバイスで検知し、常駐通知のテキストに
-反映する(例:「配信中(猫を検知)」)。EfficientDet-Lite0モデル(`assets/efficientdet_lite0.tflite`、
-リポジトリに同梱済み)をMediaPipe Tasks Visionで実行する。設計判断の詳細は
+カメラ映像に猫・人が映っているかをオンデバイスで検知し、常駐通知のテキストに反映する
+(例:「配信中(猫を検知)」「待機中(前回の見回りで猫を検知)」)。配信中は30秒間隔、
+視聴者がいない待機中も15分に1回・5秒間だけカメラを起動する「見回り」で検知する。
+EfficientDet-Lite0モデル(`assets/efficientdet_lite0.tflite`、リポジトリに同梱済み)を
+MediaPipe Tasks Visionで実行する。設計判断の詳細は
 [docs/cat-person-detection.md](../docs/cat-person-detection.md) を参照。
 
 ## 既知の未検証事項(実機確認が必要)

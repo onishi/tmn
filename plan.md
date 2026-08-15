@@ -131,7 +131,8 @@ Caster(配信Androidアプリ)が未完成でも進められるよう、先にWe
 ## M7. 見守り機能強化(フェーズ3)
 
 - [x] 猫・人が映っているかのオンデバイス検知(MediaPipe Tasks Vision + EfficientDet-Lite0、
-      配信中のみ30秒間隔で実行し常駐通知に反映): [docs/cat-person-detection.md](./docs/cat-person-detection.md)参照。
+      配信中は30秒間隔、待機中も15分に1回・5秒間だけカメラを起動する「見回り」で実行し
+      常駐通知に反映): [docs/cat-person-detection.md](./docs/cat-person-detection.md)参照。
       実機での精度・レイテンシ・APKサイズ影響は未検証
 - [ ] フレーム差分による動体検知ロジック(Caster内)
 - [ ] 動体検知トリガーでの自動配信開始(オンデマンド方針との統合)
