@@ -1,4 +1,4 @@
-package com.tmn.broadcaster
+package com.tmn.caster
 
 // デプロイ環境ごとに書き換えること。ROOM_TOKENは視聴側(viewer)のURL ?room=<token> と一致させる。
 object Config {

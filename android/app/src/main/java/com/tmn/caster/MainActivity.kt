@@ -1,4 +1,4 @@
-package com.tmn.broadcaster
+package com.tmn.caster
 
 import android.Manifest
 import android.content.Intent

@@ -1,17 +1,17 @@
 # tmn-signaling
 
 Cloudflare Workers + Durable Objects によるWebRTCシグナリング中継。
-ルームトークンごとに1つの `Room` Durable Objectが割り当てられ、Broadcaster(配信アプリ、
-プロトコル上は`role=broadcaster`)とViewer(視聴アプリ、プロトコル上は`role=viewer`)間の
+ルームトークンごとに1つの `Room` Durable Objectが割り当てられ、Caster(配信アプリ、
+プロトコル上は`role=caster`)とViewer(視聴アプリ、プロトコル上は`role=viewer`)間の
 Offer/Answer/ICE candidateを中継する。
 
 ## プロトコル
 
-`wss://<host>/room/<roomToken>?role=broadcaster|viewer` に接続する。
+`wss://<host>/room/<roomToken>?role=caster|viewer` に接続する。
 `ACCESS_PASSWORD` を設定している場合は `&password=<パスワード>` も必須(下記「簡易パスワード認証」参照)。
 
-- Viewer接続時、Broadcasterへ `{"type":"viewer-joined"}` を送信(オンデマンド配信のトリガー)
-- Viewer切断時、Broadcasterへ `{"type":"viewer-left"}` を送信
+- Viewer接続時、Casterへ `{"type":"viewer-joined"}` を送信(オンデマンド配信のトリガー)
+- Viewer切断時、Casterへ `{"type":"viewer-left"}` を送信
 - それ以外の全メッセージ(offer/answer/ice-candidate等)は相手ロールへそのまま中継する
 
 ## 簡易パスワード認証(任意)
@@ -23,7 +23,7 @@ Offer/Answer/ICE candidateを中継する。
 - ローカル開発: `signaling/.dev.vars.example` を `.dev.vars` にコピーし `ACCESS_PASSWORD` を設定(`.dev.vars` はコミットしない)
 - 本番: `npx wrangler secret put ACCESS_PASSWORD` でCloudflare側にシークレットとして登録する
 
-Viewer側は `config.js` の `accessPassword`、Broadcaster側は `Config.kt` の `ACCESS_PASSWORD` に同じ値を設定する。
+Viewer側は `config.js` の `accessPassword`、Caster側は `Config.kt` の `ACCESS_PASSWORD` に同じ値を設定する。
 
 ## 開発
 

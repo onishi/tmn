@@ -1,4 +1,4 @@
-export type Role = "broadcaster" | "viewer";
+export type Role = "caster" | "viewer";
 
 interface Session {
   socket: WebSocket;
@@ -7,7 +7,7 @@ interface Session {
 
 /**
  * 1ルーム = 1視聴用トークンに対応するDurable Object。
- * broadcaster(配信Androidアプリ)とviewer(視聴Webアプリ)のWebSocketを保持し、
+ * Caster(配信アプリ)とViewer(視聴アプリ)のWebSocketを保持し、
  * Offer/Answer/ICE candidateをそのまま相手側へ中継する。
  */
 export class Room {
@@ -17,8 +17,8 @@ export class Room {
     const url = new URL(request.url);
     const role = url.searchParams.get("role");
 
-    if (role !== "broadcaster" && role !== "viewer") {
-      return new Response("role must be 'broadcaster' or 'viewer'", { status: 400 });
+    if (role !== "caster" && role !== "viewer") {
+      return new Response("role must be 'caster' or 'viewer'", { status: 400 });
     }
 
     if (request.headers.get("Upgrade") !== "websocket") {
@@ -38,9 +38,9 @@ export class Room {
     this.sessions.set(socket, { socket, role });
 
     if (role === "viewer") {
-      this.sendToRole("broadcaster", { type: "viewer-joined" });
+      this.sendToRole("caster", { type: "viewer-joined" });
     } else if (this.hasRole("viewer")) {
-      // broadcasterがviewer接続後に(再)接続してきた場合も通知する
+      // Casterがviewer接続後に(再)接続してきた場合も通知する
       socket.send(JSON.stringify({ type: "viewer-joined" }));
     }
 
@@ -52,7 +52,7 @@ export class Room {
       const session = this.sessions.get(socket);
       this.sessions.delete(socket);
       if (session?.role === "viewer") {
-        this.sendToRole("broadcaster", { type: "viewer-left" });
+        this.sendToRole("caster", { type: "viewer-left" });
       }
     };
 
@@ -60,12 +60,12 @@ export class Room {
     socket.addEventListener("error", cleanup);
   }
 
-  /** broadcaster発のメッセージはviewer全員へ、viewer発のメッセージはbroadcasterへ中継する */
+  /** Caster発のメッセージはviewer全員へ、viewer発のメッセージはCasterへ中継する */
   private relay(sender: WebSocket, data: string): void {
     const senderSession = this.sessions.get(sender);
     if (!senderSession) return;
 
-    const targetRole: Role = senderSession.role === "broadcaster" ? "viewer" : "broadcaster";
+    const targetRole: Role = senderSession.role === "caster" ? "viewer" : "caster";
     for (const session of this.sessions.values()) {
       if (session.role === targetRole) {
         session.socket.send(data);

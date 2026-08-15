@@ -1,6 +1,6 @@
-# Android 14〜17対応の検討(Broadcaster)
+# Android 14〜17対応の検討(Caster)
 
-Broadcaster(配信アプリ、`android/`)をAndroid 14〜17の端末で動作させるために調査した内容と、
+Caster(配信アプリ、`android/`)をAndroid 14〜17の端末で動作させるために調査した内容と、
 採用した方針の記録。この開発環境にはAndroid SDKが無くビルド確認ができないため、
 判断の根拠を残しておく。
 

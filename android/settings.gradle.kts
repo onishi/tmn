@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "tmn-broadcaster"
+rootProject.name = "tmn-caster"
 include(":app")
