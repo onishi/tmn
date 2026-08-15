@@ -21,11 +21,18 @@
       background: #000;
       object-fit: contain; /* 画面比率が違っても映像を欠けさせず全体を表示する */
     }
-    #status {
+    #status-bar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
+      /* <video>が独自の合成レイヤーを持ち、z-index:auto のままだとその上に
+         描画されてタップを奪ってしまう環境があるため、明示的に上げておく */
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
       padding: 8px 12px;
       padding-top: calc(8px + env(safe-area-inset-top));
       padding-left: calc(12px + env(safe-area-inset-left));
@@ -33,25 +40,146 @@
       background: rgba(0, 0, 0, 0.6);
       font-size: 14px;
     }
+    #status {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #switch-button,
+    #fullscreen-button {
+      flex: 0 0 auto;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.12);
+      color: #eee;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 8px;
+      font-size: 13px;
+      /* スマホでの誤タップ・ダブルタップズームを防ぎつつ、押しやすいサイズを確保する */
+      touch-action: manipulation;
+    }
     #fullscreen-button {
       position: fixed;
+      z-index: 10;
       right: calc(12px + env(safe-area-inset-right));
       bottom: calc(12px + env(safe-area-inset-bottom));
       padding: 10px 14px;
       background: rgba(0, 0, 0, 0.6);
-      color: #eee;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      border-radius: 8px;
       font-size: 14px;
-      /* スマホでの誤タップ・ダブルタップズームを防ぎつつ、押しやすいサイズを確保する */
+    }
+    dialog#source-dialog {
+      border: none;
+      border-radius: 10px;
+      padding: 16px;
+      background: #1a1a1a;
+      color: #eee;
+      width: min(360px, 90vw);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    dialog#source-dialog::backdrop {
+      background: rgba(0, 0, 0, 0.6);
+    }
+    dialog#source-dialog h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    #current-room-label {
+      font-size: 12px;
+      color: #aaa;
+      margin: 0 0 12px;
+      word-break: break-all;
+    }
+    #source-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .source-empty {
+      color: #999;
+      font-size: 13px;
+      padding: 4px;
+    }
+    .source-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 4px 4px 4px 10px;
+    }
+    .source-select {
+      flex: 1;
+      text-align: left;
+      background: none;
+      border: none;
+      color: #eee;
+      font-size: 14px;
+      padding: 6px 4px;
       touch-action: manipulation;
+    }
+    .source-remove {
+      flex: 0 0 auto;
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #eee;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      touch-action: manipulation;
+    }
+    #add-source-form {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #add-source-form input {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: #111;
+      color: #eee;
+      font-size: 14px;
+    }
+    #add-source-form button,
+    #close-dialog-button {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.1);
+      color: #eee;
+      font-size: 14px;
+      touch-action: manipulation;
+    }
+    #close-dialog-button {
+      margin-top: 10px;
+      width: 100%;
     }
   </style>
 </head>
 <body>
-  <div id="status">初期化中...</div>
+  <div id="status-bar">
+    <span id="status">初期化中...</span>
+    <button id="switch-button" type="button">配信元</button>
+  </div>
   <video id="remote-video" autoplay playsinline muted></video>
   <button id="fullscreen-button" type="button" hidden>全画面</button>
+
+  <dialog id="source-dialog">
+    <h2>配信元の切り替え</h2>
+    <p id="current-room-label"></p>
+    <ul id="source-list"></ul>
+    <form id="add-source-form">
+      <input id="add-source-label" type="text" placeholder="名前(例: リビング)" required />
+      <input id="add-source-room" type="text" placeholder="ルームトークン" required />
+      <button type="submit">この配信元を保存</button>
+    </form>
+    <button id="close-dialog-button" type="button">閉じる</button>
+  </dialog>
+
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
