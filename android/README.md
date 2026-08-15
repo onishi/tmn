@@ -42,8 +42,10 @@ Android Studioでこのディレクトリを開いても良い。`minSdk = 26` �
 - CameraX依存は宣言してあるが、実際のカメラキャプチャは `org.webrtc.Camera2Enumerator` /
   `Camera2Capturer` を使用(WebRTC SDKが自前でCamera2を制御するため、CameraXとの二重制御を避けた)。
   ローカルプレビューUIが必要になった場合はCameraXのPreview UseCaseを別途追加する。
-- Foreground Service化(`foregroundServiceType="camera"`)はAndroid 14以降の権限要件に沿っているが、
-  実機での起動・画面消灯後の継続動作は未検証。
+- Foreground Service化(`foregroundServiceType="camera"`)はAndroid 14(API 34)の権限要件に沿っている:
+  `FOREGROUND_SERVICE_CAMERA`権限、カメラ権限の事前取得、Android 13+向けの`POST_NOTIFICATIONS`
+  実行時権限リクエスト(無いと常駐通知が表示されないため)を実装済み。ただし実機での起動・
+  画面消灯後の継続動作は未検証。
 - バッテリー最適化除外・スリープ設定は `MainActivity` からダイアログを開くのみで、実際の除外確認は行っていない。
 - シグナリングWebSocketが切断された場合、`SignalingClient`が指数バックオフ(1秒〜15秒)で自動的に
   再接続する(viewer/app.jsと同じ方式)。ただしこれはプロセスが生きている間の再接続のみで、

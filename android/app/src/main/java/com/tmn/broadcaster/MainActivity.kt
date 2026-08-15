@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
@@ -13,9 +14,11 @@ import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
-    private val requestPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
+    private val requestPermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            // カメラ権限さえ得られれば配信自体は可能。通知権限(Android 13+)は
+            // 拒否されても常駐通知が出ないだけでサービス自体は動作する
+            if (result[Manifest.permission.CAMERA] == true) {
                 startStreamingService()
             }
         }
@@ -23,15 +26,25 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
+        val missingPermissions = requiredPermissions().filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (missingPermissions.isEmpty()) {
             startStreamingService()
         } else {
-            requestPermission.launch(Manifest.permission.CAMERA)
+            requestPermissions.launch(missingPermissions.toTypedArray())
         }
 
         requestIgnoreBatteryOptimizations()
+    }
+
+    private fun requiredPermissions(): List<String> {
+        val permissions = mutableListOf(Manifest.permission.CAMERA)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+        return permissions
     }
 
     private fun startStreamingService() {
