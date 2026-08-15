@@ -12,7 +12,24 @@ Offer/Answer/ICE candidateを中継する。
 
 - Viewer接続時、Casterへ `{"type":"viewer-joined"}` を送信(オンデマンド配信のトリガー)
 - Viewer切断時、Casterへ `{"type":"viewer-left"}` を送信
+- Caster発の `{"type":"detection-status","hasCat":bool,"hasPerson":bool}` は、Viewerへ中継すると
+  同時に直近の1件をRoom内にキャッシュする(下記「猫・人検知ステータスの確認」参照)
 - それ以外の全メッセージ(offer/answer/ice-candidate等)は相手ロールへそのまま中継する
+
+## 猫・人検知ステータスの確認(視聴を開始せずに)
+
+`GET /room/<roomToken>/status`(`ACCESS_PASSWORD` 設定時は `?password=` も必須)で、
+Casterが直近に報告した検知結果を確認できる。WebSocketアップグレードは不要な通常のGETで、
+視聴用の接続(=Caster側のカメラ起動)を伴わない。
+
+```json
+{"hasCat": true, "hasPerson": false, "updatedAtMs": 1735689600000}
+```
+
+一度も報告が無い場合は `{"hasCat": null, "hasPerson": null, "updatedAtMs": null}` を返す。
+Viewer(Cloudflare Pages)とはオリジンが異なるため、レスポンスに
+`Access-Control-Allow-Origin: *` を付与している。詳細は
+[docs/cat-person-detection.md](../docs/cat-person-detection.md) を参照。
 
 ## 簡易パスワード認証(任意)
 

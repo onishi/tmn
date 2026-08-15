@@ -182,6 +182,8 @@ class StreamingService : Service(), SignalingClient.Listener {
     }
 
     private fun onDetectionResult(result: CatPersonDetector.CatPersonDetectionResult) {
+        sendDetectionStatus(result)
+
         val text = if (peerConnection != null) {
             when {
                 result.hasCat && result.hasPerson -> getString(R.string.notification_text_streaming_cat_and_person)
@@ -373,6 +375,21 @@ class StreamingService : Service(), SignalingClient.Listener {
                 put("sdpMid", candidate.sdpMid)
                 put("sdpMLineIndex", candidate.sdpMLineIndex)
             })
+        }
+        signalingClient.send(json.toString())
+    }
+
+    /**
+     * 検知結果をシグナリングWorkerへ送る。Roomが直近の1件をキャッシュし、
+     * Viewerが視聴を開始する前でも `GET /room/<token>/status` で確認できるようにする
+     * (配信中であればViewer全員へそのまま中継もされる)。signalingClientは配信の
+     * 有無に関わらず常時接続されているため、待機中の見回り結果もそのまま送れる。
+     */
+    private fun sendDetectionStatus(result: CatPersonDetector.CatPersonDetectionResult) {
+        val json = JSONObject().apply {
+            put("type", "detection-status")
+            put("hasCat", result.hasCat)
+            put("hasPerson", result.hasPerson)
         }
         signalingClient.send(json.toString())
     }

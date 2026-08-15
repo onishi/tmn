@@ -134,6 +134,10 @@ Caster(配信Androidアプリ)が未完成でも進められるよう、先にWe
       配信中は30秒間隔、待機中も15分に1回・5秒間だけカメラを起動する「見回り」で実行し
       常駐通知に反映): [docs/cat-person-detection.md](./docs/cat-person-detection.md)参照。
       実機での精度・レイテンシ・APKサイズ影響は未検証
+- [x] 検知結果をViewerへ伝達し、視聴を開始せずに確認できるようにする(シグナリングに
+      `GET /room/<token>/status`を新設し、Roomが直近の1件をキャッシュ。配信元ダイアログの
+      各カメラにバッジ表示): [docs/cat-person-detection.md](./docs/cat-person-detection.md)参照。
+      Playwright E2Eで検証済み(Caster側からの実際の送信は擬似クライアントで模擬)
 - [ ] フレーム差分による動体検知ロジック(Caster内)
 - [ ] 動体検知トリガーでの自動配信開始(オンデマンド方針との統合)
 - [ ] Firebase Cloud Messaging連携、Push通知送信
