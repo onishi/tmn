@@ -3,16 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <title>TMN - 見守りカメラ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
-    body { margin: 0; background: #111; color: #eee; font-family: system-ui, sans-serif; }
-    #remote-video { width: 100%; max-height: 100vh; display: block; background: #000; }
-    #status { position: fixed; top: 0; left: 0; right: 0; padding: 8px 12px; background: rgba(0, 0, 0, 0.6); font-size: 14px; }
+    html, body {
+      margin: 0;
+      height: 100vh;
+      height: 100dvh; /* iOS Safari等でアドレスバーの出没によりレイアウトが跳ねるのを防ぐ */
+      background: #000;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      overscroll-behavior: none; /* 引っ張って更新のバウンスを抑止 */
+    }
+    #remote-video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #000;
+      object-fit: contain; /* 画面比率が違っても映像を欠けさせず全体を表示する */
+    }
+    #status {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 12px;
+      padding-top: calc(8px + env(safe-area-inset-top));
+      padding-left: calc(12px + env(safe-area-inset-left));
+      padding-right: calc(12px + env(safe-area-inset-right));
+      background: rgba(0, 0, 0, 0.6);
+      font-size: 14px;
+    }
+    #fullscreen-button {
+      position: fixed;
+      right: calc(12px + env(safe-area-inset-right));
+      bottom: calc(12px + env(safe-area-inset-bottom));
+      padding: 10px 14px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #eee;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 8px;
+      font-size: 14px;
+      /* スマホでの誤タップ・ダブルタップズームを防ぎつつ、押しやすいサイズを確保する */
+      touch-action: manipulation;
+    }
   </style>
 </head>
 <body>
   <div id="status">初期化中...</div>
-  <video id="remote-video" autoplay playsinline></video>
+  <video id="remote-video" autoplay playsinline muted></video>
+  <button id="fullscreen-button" type="button" hidden>全画面</button>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>

@@ -7,6 +7,15 @@
 `https://<デプロイ先>/index.html?room=<ルームトークン>` にアクセスすると、`config.js` に設定した
 シグナリングWorker経由でWebRTC接続し、配信映像を表示する。
 
+スマホでの視聴を主な用途として想定しており、以下のモバイル対応を行っている:
+
+- `100dvh`(動的ビューポート高さ)を優先使用し、iOS Safari等でアドレスバーの出没によって
+  レイアウトが跳ねるのを防ぐ(未対応ブラウザでは`100vh`にフォールバック)
+- ノッチ・ホームインジケーター領域を`env(safe-area-inset-*)`で避ける
+- 映像は`object-fit: contain`で、画面比率が違っても欠けずに全体表示
+- 自動再生の安定性のため`<video>`に`muted`を付与(現状音声トラックは無いため実害なし)
+- 全画面ボタンを用意(Fullscreen API、非対応のiOS Safariは`webkitEnterFullscreen`にフォールバック)
+
 ## 開発前の設定
 
 `config.js` の `signalingUrl` をデプロイ済みのシグナリングWorkerのURLに書き換える。
