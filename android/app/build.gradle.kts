@@ -37,6 +37,12 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    androidResources {
+        // .tfliteモデルファイルはAAPTの圧縮対象から除外する(MediaPipeがアセットを
+        // 直接読み込む際に、圧縮されたアセットだとエラーになるケースを避けるため)
+        noCompress += "tflite"
+    }
 }
 
 dependencies {
@@ -50,6 +56,10 @@ dependencies {
 
     // WebRTC (Google公式SDKはメンテ終了のため、コミュニティメンテのビルドを使用)
     implementation("io.github.webrtc-sdk:android:125.6422.07.1")
+
+    // 猫・人検知(オンデバイス物体検出)。TensorFlow Lite Task Libraryはメンテナンスモードで
+    // GoogleがMediaPipe Tasksへの移行を推奨しているため、こちらを採用する
+    implementation("com.google.mediapipe:tasks-vision:0.10.29")
 
     // シグナリングWebSocketクライアント
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +28,9 @@ import org.webrtc.RtpReceiver
 import org.webrtc.SessionDescription
 import org.webrtc.SurfaceTextureHelper
 import org.webrtc.VideoCapturer
+import org.webrtc.VideoSink
 import org.webrtc.VideoSource
+import org.webrtc.VideoTrack
 import org.webrtc.DataChannel
 
 /**
@@ -47,7 +50,23 @@ class StreamingService : Service(), SignalingClient.Listener {
     private var peerConnection: PeerConnection? = null
     private var videoCapturer: VideoCapturer? = null
     private var videoSource: VideoSource? = null
+    private var videoTrack: VideoTrack? = null
     private var surfaceTextureHelper: SurfaceTextureHelper? = null
+
+    private var catPersonDetector: CatPersonDetector? = null
+    private var lastDetectionAtMs = 0L
+
+    /** 配信中のみ、間引いたフレームを猫・人検知に回す(常時推論はしない) */
+    private val detectionSink = VideoSink { frame ->
+        val detector = catPersonDetector
+        val now = SystemClock.elapsedRealtime()
+        if (detector == null || now - lastDetectionAtMs < DETECTION_INTERVAL_MS) {
+            return@VideoSink // retainしていないため、何もしなくてもWebRTC側が解放する
+        }
+        lastDetectionAtMs = now
+        frame.retain()
+        detector.detectFrameAsync(frame, now)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -55,6 +74,7 @@ class StreamingService : Service(), SignalingClient.Listener {
 
         eglBase = EglBase.create()
         initPeerConnectionFactory()
+        catPersonDetector = createCatPersonDetector()
 
         signalingClient = SignalingClient(signalingUrl(), this)
         signalingClient.connect()
@@ -66,10 +86,32 @@ class StreamingService : Service(), SignalingClient.Listener {
 
     override fun onDestroy() {
         stopStreaming()
+        catPersonDetector?.close()
         signalingClient.close()
         peerConnectionFactory.dispose()
         eglBase.release()
         super.onDestroy()
+    }
+
+    private fun createCatPersonDetector(): CatPersonDetector? {
+        return try {
+            CatPersonDetector(applicationContext, ::onDetectionResult)
+        } catch (e: Exception) {
+            // モデル読み込み失敗時などでも、検知機能なしで配信自体は継続させる
+            Log.e(TAG, "failed to initialize CatPersonDetector; continuing without detection", e)
+            null
+        }
+    }
+
+    private fun onDetectionResult(result: CatPersonDetector.CatPersonDetectionResult) {
+        if (peerConnection == null) return // 配信終了後に届いた結果は無視する
+        val text = when {
+            result.hasCat && result.hasPerson -> getString(R.string.notification_text_streaming_cat_and_person)
+            result.hasCat -> getString(R.string.notification_text_streaming_cat)
+            result.hasPerson -> getString(R.string.notification_text_streaming_person)
+            else -> getString(R.string.notification_text_streaming)
+        }
+        updateNotification(text)
     }
 
     private fun signalingUrl(): String {
@@ -146,6 +188,8 @@ class StreamingService : Service(), SignalingClient.Listener {
         capturer.startCapture(1280, 720, 30)
 
         val videoTrack = peerConnectionFactory.createVideoTrack("tmn-video", source)
+        this.videoTrack = videoTrack
+        videoTrack.addSink(detectionSink)
 
         val rtcConfig = PeerConnection.RTCConfiguration(
             listOf(PeerConnection.IceServer.builder("stun:stun.cloudflare.com:3478").createIceServer())
@@ -181,6 +225,9 @@ class StreamingService : Service(), SignalingClient.Listener {
     }
 
     private fun stopStreaming() {
+        videoTrack?.removeSink(detectionSink)
+        videoTrack = null
+
         videoCapturer?.let {
             try {
                 it.stopCapture()
@@ -283,5 +330,8 @@ class StreamingService : Service(), SignalingClient.Listener {
     companion object {
         private const val TAG = "StreamingService"
         private const val NOTIFICATION_ID = 1
+
+        // 猫・人検知の実行間隔。毎フレーム推論するとバッテリー消費が大きいため間引く
+        private const val DETECTION_INTERVAL_MS = 5000L
     }
 }
