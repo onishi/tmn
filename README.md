@@ -144,4 +144,5 @@
 | [`android/`](./android) | 配信Androidアプリ(Kotlin、Android SDK未検証) |
 
 デプロイ手順は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。設計検討メモは [`docs/`](./docs) に置く
-(例: [複数視聴者対応の設計検討](./docs/multi-viewer-design.md))。
+(例: [複数視聴者対応の設計検討](./docs/multi-viewer-design.md)、
+[Android 14〜17対応の検討](./docs/android-14-17-support.md))。
