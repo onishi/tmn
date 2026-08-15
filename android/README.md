@@ -15,7 +15,7 @@
 | `SdpObserverAdapter.kt` | `org.webrtc.SdpObserver` の必要メソッドのみoverrideするためのアダプタ |
 | `StreamingService.kt` | 常時起動のForeground Service。WS常時接続、`viewer-joined`受信でカメラ起動・Offer送信、`viewer-left`で停止するオンデマンド配信ロジック本体 |
 | `MainActivity.kt` | カメラ権限リクエスト、バッテリー最適化除外の案内、サービス起動 |
-| `CatPersonDetector.kt` | MediaPipe Tasks Visionによる猫・人検知(配信中のみ、5秒間隔で実行) |
+| `CatPersonDetector.kt` | MediaPipe Tasks Visionによる猫・人検知(配信中のみ、30秒間隔で実行) |
 
 ## 事前設定
 
