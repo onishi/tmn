@@ -103,7 +103,7 @@ Caster(アプリそのもの)とは区別して使う。
 
 ### フェーズ3: 見守り機能の強化
 
-- **動体検知・通知**:Caster側でフレーム差分を検出しPush通知(Firebase Cloud Messaging)。動体検知時のみ配信を自動開始する運用にすれば、オンデマンド配信方針とも自然に統合できる
+- **動体検知・通知**:Caster側でフレーム差分を検出しPush通知(Firebase Cloud Messaging)。動体検知時のみ配信を自動開始する運用にすれば、オンデマンド配信方針とも自然に統合できる。なお「映っているのが猫か人か」を認識する機能自体は先行実装済み([docs/cat-person-detection.md](./docs/cat-person-detection.md))
 - **録画・クリップ保存**:一定時間のバッファを保持し、イベント前後を自動保存(Cloudflare R2やFirebase Storage)
 - **音声対応**:双方向音声で呼びかけ機能
 - **複数カメラ対応**:古いスマホを複数台設置し、切り替えて閲覧
@@ -157,4 +157,5 @@ Caster(アプリそのもの)とは区別して使う。
 
 デプロイ手順は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。設計検討メモは [`docs/`](./docs) に置く
 (例: [複数視聴者対応の設計検討](./docs/multi-viewer-design.md)、
-[Android 14〜17対応の検討](./docs/android-14-17-support.md))。
+[Android 14〜17対応の検討](./docs/android-14-17-support.md)、
+[猫・人の検知](./docs/cat-person-detection.md))。

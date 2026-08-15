@@ -4,4 +4,7 @@
     <string name="notification_channel_name">見守り配信</string>
     <string name="notification_text_idle">待機中(視聴者接続時に配信開始)</string>
     <string name="notification_text_streaming">配信中</string>
+    <string name="notification_text_streaming_cat">配信中(猫を検知)</string>
+    <string name="notification_text_streaming_person">配信中(人を検知)</string>
+    <string name="notification_text_streaming_cat_and_person">配信中(猫と人を検知)</string>
 </resources>
