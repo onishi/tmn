@@ -92,7 +92,7 @@ class CatPersonDetector(
     /** WebRTCのI420(プレーナー)バッファを、Android標準APIだけでBitmapへ変換する。
      * 色空間変換を自前実装せず、あえてYuvImage→JPEG→Bitmapという遠回りな経路を使うのは、
      * ビルド・実機検証ができないこの開発環境では、既存の実装が確定しているAPIに乗せて
-     * 正しさの確信度を上げる方を優先したため(検知は5秒に1回程度の間引き実行なので、
+     * 正しさの確信度を上げる方を優先したため(検知は30秒に1回程度の間引き実行なので、
      * JPEG変換のオーバーヘッドは実用上問題にならない)。 */
     private fun i420ToBitmap(buffer: VideoFrame.I420Buffer): Bitmap {
         val nv21 = i420ToNv21(buffer)

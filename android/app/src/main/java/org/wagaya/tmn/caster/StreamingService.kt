@@ -332,6 +332,6 @@ class StreamingService : Service(), SignalingClient.Listener {
         private const val NOTIFICATION_ID = 1
 
         // 猫・人検知の実行間隔。毎フレーム推論するとバッテリー消費が大きいため間引く
-        private const val DETECTION_INTERVAL_MS = 5000L
+        private const val DETECTION_INTERVAL_MS = 30000L
     }
 }
