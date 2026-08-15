@@ -1,4 +1,4 @@
-# tmn-viewer
+# Viewer(視聴アプリ) — tmn-viewer
 
 視聴用の静的Webページ。ビルド不要(vanilla HTML/JS)。Cloudflare Pagesでホスティングする。
 

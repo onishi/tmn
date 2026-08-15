@@ -11,8 +11,8 @@ README.md の設計(MVP設計・発展計画フェーズ2〜4)を、実装単位
 |---|---|---|
 | M0 | 環境準備・アカウント整備 | 1.5 手順1 |
 | M1 | シグナリングWorker(最小実装) | 1.5 手順2 |
-| M2 | 視聴Webアプリ(モック配信で疎通) | 1.5 手順4 |
-| M3 | 配信Androidアプリ(最小実装) | 1.5 手順3 |
+| M2 | Viewer(視聴Webアプリ、モック配信で疎通) | 1.5 手順4 |
+| M3 | Broadcaster(配信Androidアプリ、最小実装) | 1.5 手順3 |
 | M4 | E2E結合(WebRTC映像疎通) | 1.5 手順3〜5 |
 | M5 | 常設・デプロイ | 1.5 手順6〜7 |
 | M6 | 安定性・利便性向上 | フェーズ2 |
@@ -42,9 +42,9 @@ README.md の設計(MVP設計・発展計画フェーズ2〜4)を、実装単位
 Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作る。
 
 - [x] Durable Object `Room` クラスの雛形作成(1ルーム = 1トークン)
-- [x] WebSocket接続の確立・切断ハンドリング(配信側/視聴側の2ロールを区別)
+- [x] WebSocket接続の確立・切断ハンドリング(Broadcaster/Viewerの2ロールを区別)
 - [x] メッセージ中継ロジック(Offer/Answer/ICE candidateをそのまま相手側へフォワード)
-- [x] 視聴側接続をトリガーに配信側へ「配信開始」通知を送る仕組み
+- [x] Viewer接続をトリガーにBroadcasterへ「配信開始」通知を送る仕組み
 - [x] ルームトークンのバリデーション(推測困難な文字列、URLパスまたはクエリで指定)
 - [x] ローカル(`wrangler dev`)でWebSocketクライアント(`test/manual-relay-check.mjs`)による疎通テスト
 - [ ] Cloudflareへデプロイし、疎通確認
@@ -53,9 +53,9 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 ---
 
-## M2. 視聴Webアプリ(モック配信で疎通)
+## M2. Viewer(視聴Webアプリ、モック配信で疎通)
 
-配信側Androidアプリが未完成でも進められるよう、先にWeb側だけで検証する。
+Broadcaster(配信Androidアプリ)が未完成でも進められるよう、先にWeb側だけで検証する。
 
 - [x] 静的ページ雛形(HTML/CSS/JS、フレームワークは軽量なもの or vanilla)
 - [x] URLの `?room=xxxxxxxx` トークン読み取り
@@ -69,7 +69,7 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 ---
 
-## M3. 配信Androidアプリ(最小実装)
+## M3. Broadcaster(配信Androidアプリ、最小実装)
 
 - [ ] Android Studioプロジェクト作成(Kotlin, minSdk選定)
 - [ ] CameraXでカメラプレビュー取得(まずはローカル表示のみで確認)
@@ -86,11 +86,11 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 ## M4. E2E結合(WebRTC映像疎通)
 
-- [ ] M2の視聴Webアプリ ↔ M3の配信Androidアプリを同一ルームトークンで接続
+- [ ] M2のViewer ↔ M3のBroadcasterを同一ルームトークンで接続
 - [ ] STUN(`stun.cloudflare.com`)設定、ローカルネットワークでのP2P接続確認
 - [ ] 異なるネットワーク(モバイル回線 vs Wi-Fi)でのNAT越え確認、TURNフォールバック動作確認
 - [ ] 接続確立までのレイテンシ・映像遅延の実測
-- [ ] 異常系確認(視聴側切断、配信側ネットワーク瞬断、再接続なしでの挙動)
+- [ ] 異常系確認(Viewer切断、Broadcaster側ネットワーク瞬断、再接続なしでの挙動)
 
 **完了条件:** 実際に自宅のスマホ(配信)と外出先の回線(視聴)でライブ映像が見られる。
 
@@ -113,8 +113,8 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 ## M6. 安定性・利便性向上(フェーズ2)
 
 - [ ] TURN利用量モニタリング(Cloudflareダッシュボード定期確認 or 通知)
-- [x] 視聴Webアプリ側の自動再接続(シグナリングWS切断時に指数バックオフで再接続、PeerConnectionを作り直す)
-- [x] 配信Androidアプリ側のシグナリング切断時の即時再接続(`SignalingClient`が指数バックオフで
+- [x] Viewer側の自動再接続(シグナリングWS切断時に指数バックオフで再接続、PeerConnectionを作り直す)
+- [x] Broadcaster側のシグナリング切断時の即時再接続(`SignalingClient`が指数バックオフで
       自動再接続。viewer/app.jsと同じ方式。ビルド未検証)
 - [ ] WorkManagerによる定期的なプロセス生存確認・再起動(FGサービスごとプロセスが終了した場合の復旧)
 - [ ] Wi-Fi切断・アプリ復帰時のセッション再構築
@@ -130,7 +130,7 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 ## M7. 見守り機能強化(フェーズ3)
 
-- [ ] フレーム差分による動体検知ロジック(配信側アプリ内)
+- [ ] フレーム差分による動体検知ロジック(Broadcaster内)
 - [ ] 動体検知トリガーでの自動配信開始(オンデマンド方針との統合)
 - [ ] Firebase Cloud Messaging連携、Push通知送信
 - [ ] 録画バッファ実装(イベント前後を保存)
@@ -146,7 +146,7 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 - [ ] 視聴者数・TURN従量課金状況のレビュー、SFU移行 or 自宅サーバー移行の判断
 - [ ] (必要な場合)Cloudflare Realtime SFU導入
-- [ ] (必要な場合)iOS版配信アプリ検討(Kotlin Multiplatform等)
+- [ ] (必要な場合)iOS版Broadcaster検討(Kotlin Multiplatform等)
 - [ ] 他センサー(温度・給餌タイミング等)とのダッシュボード統合
 - [ ] 招待リンクによる家族・複数デバイス共有機能
 
@@ -156,6 +156,6 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
 
 ## 進め方の指針
 
-- M1(シグナリング)とM2(視聴Web)は並行着手可能。M3(Android)はWebRTC SDK学習コストが高いため先に着手して並走させるのが望ましい。
+- M1(シグナリング)とM2(Viewer)は並行着手可能。M3(Broadcaster)はWebRTC SDK学習コストが高いため先に着手して並走させるのが望ましい。
 - MVP完成の定義はM5まで。M6以降は運用しながら優先度を都度見直す。
 - 各マイルストーン内のチェックボックスは実装順の目安であり、厳密な順序拘束ではない。

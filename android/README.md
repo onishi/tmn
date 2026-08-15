@@ -1,4 +1,4 @@
-# tmn-broadcaster (配信Androidアプリ)
+# Broadcaster(配信アプリ) — tmn-broadcaster
 
 古いAndroidスマホをカメラ端末として使い、シグナリングWorker経由でWebRTC配信するネイティブアプリ。
 
@@ -19,7 +19,7 @@
 ## 事前設定
 
 `app/src/main/java/com/tmn/broadcaster/Config.kt` を編集し、デプロイ済みシグナリングWorkerのURLと
-視聴側と共有するルームトークンを設定する。
+Viewerと共有するルームトークンを設定する。
 
 ```kotlin
 object Config {

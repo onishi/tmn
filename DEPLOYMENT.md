@@ -22,13 +22,13 @@ npx wrangler secret put ACCESS_PASSWORD
 
 ## 2. ルームトークンの発行
 
-推測困難な文字列(例: `openssl rand -hex 16`)を1つ生成し、視聴側・配信側の両方に設定する。
+推測困難な文字列(例: `openssl rand -hex 16`)を1つ生成し、Viewer・Broadcasterの両方に設定する。
 
 ```sh
 openssl rand -hex 16
 ```
 
-## 3. 視聴Webアプリのデプロイ
+## 3. Viewer(視聴Webアプリ)のデプロイ
 
 `viewer/config.js` を編集し、1で控えたURLを `wss://` スキームで設定する。ACCESS_PASSWORDを設定した場合は `accessPassword` にも同じ値を設定する。
 
@@ -48,7 +48,7 @@ npx wrangler pages deploy . --project-name=tmn-viewer
 
 視聴用URL: `https://<pages-project>.pages.dev/index.html?room=<ルームトークン>`
 
-## 4. 配信Androidアプリのビルド・設置
+## 4. Broadcaster(配信Androidアプリ)のビルド・設置
 
 Android SDKが利用可能な環境(Android Studio等)で実施する。
 
@@ -61,10 +61,10 @@ Android SDKが利用可能な環境(Android Studio等)で実施する。
 ## 5. E2E確認(plan.md M4)
 
 1. 視聴用URLにアクセスし、シグナリングWebSocketが接続されることを確認
-2. 配信アプリ側で `viewer-joined` を受信し、カメラが起動・Offer送信されることを確認(Logcat)
-3. 視聴側で映像が表示されることを確認
+2. Broadcaster側で `viewer-joined` を受信し、カメラが起動・Offer送信されることを確認(Logcat)
+3. Viewerで映像が表示されることを確認
 4. 自宅Wi-Fiと外出先回線(モバイル回線)の組み合わせでNAT越え・TURNフォールバックを確認
-5. 視聴側切断 → 配信側が `viewer-left` を受けてカメラ・PeerConnectionを解放することを確認
+5. Viewer切断 → Broadcasterが `viewer-left` を受けてカメラ・PeerConnectionを解放することを確認
 
 ## 6. 運用開始(plan.md M5)
 
