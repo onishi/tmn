@@ -35,7 +35,10 @@ object Config {
 ./gradlew assembleDebug
 ```
 
-Android Studioでこのディレクトリを開いても良い。`minSdk = 26` を想定。
+Android Studioでこのディレクトリを開いても良い。`minSdk = 26`、`compileSdk` / `targetSdk = 36`
+(Android 8.0〜16に対応、Android 17端末上でも後方互換で動作する)。
+Android 14〜17対応の詳しい検討経緯は
+[docs/android-14-17-support.md](../docs/android-14-17-support.md) を参照。
 
 ## 既知の未検証事項(実機確認が必要)
 
