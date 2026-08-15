@@ -7,4 +7,7 @@
     <string name="notification_text_streaming_cat">配信中(猫を検知)</string>
     <string name="notification_text_streaming_person">配信中(人を検知)</string>
     <string name="notification_text_streaming_cat_and_person">配信中(猫と人を検知)</string>
+    <string name="notification_text_idle_cat">待機中(前回の見回りで猫を検知)</string>
+    <string name="notification_text_idle_person">待機中(前回の見回りで人を検知)</string>
+    <string name="notification_text_idle_cat_and_person">待機中(前回の見回りで猫と人を検知)</string>
 </resources>
