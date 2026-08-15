@@ -118,7 +118,8 @@ Cloudflare Workers + Durable Objects でルームごとのWebSocket中継を作�
       自動再接続。viewer/app.jsと同じ方式。ビルド未検証)
 - [ ] WorkManagerによる定期的なプロセス生存確認・再起動(FGサービスごとプロセスが終了した場合の復旧)
 - [ ] Wi-Fi切断・アプリ復帰時のセッション再構築
-- [ ] 複数視聴者対応の設計検討(P2P複数接続 or SFU移行の比較)
+- [x] 複数視聴者対応の設計検討(P2P複数接続 or SFU移行の比較): [docs/multi-viewer-design.md](./docs/multi-viewer-design.md)参照。
+      まずP2P複数接続を実装し、視聴者5人以上等で実際にボトルネックになった段階でSFU移行を検討する方針とした(実装は未着手)
 - [x] 簡易パスワード認証の実装(シグナリング層): `ACCESS_PASSWORD`シークレットを設定すると
       `?password=`の一致がWS接続の必須条件になる。viewer/Androidの両方に対応。
       未設定時は従来通りルームトークンのみで動作(後方互換)

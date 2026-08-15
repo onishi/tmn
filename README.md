@@ -143,4 +143,5 @@
 | [`viewer/`](./viewer) | 視聴Webアプリ(静的ページ) |
 | [`android/`](./android) | 配信Androidアプリ(Kotlin、Android SDK未検証) |
 
-デプロイ手順は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。
+デプロイ手順は [DEPLOYMENT.md](./DEPLOYMENT.md) を参照。設計検討メモは [`docs/`](./docs) に置く
+(例: [複数視聴者対応の設計検討](./docs/multi-viewer-design.md))。
