@@ -1,9 +1,14 @@
-# 猫・人の検知(Caster)
+# 動物・人の検知、動体検知(Caster)
 
-Caster(配信アプリ)がカメラ映像内に猫・人が映っているかをオンデバイスで検知する機能の
-設計記録。plan.md M7「見守り機能強化」本体(動体検知→通知→録画の一連のフロー)とは別に、
+Caster(配信アプリ)がカメラ映像内に動物(猫・犬・鳥)・人が映っているかをオンデバイスで検知する
+機能の設計記録。plan.md M7「見守り機能強化」本体(動体検知→通知→録画の一連のフロー)とは別に、
 「映っているものが何かを認識できるか」という検知能力そのものを先行実装したもの。
 この開発環境にはAndroid SDKが無くビルド・実機検証ができないため、判断の根拠を残す。
+
+> 当初は猫・人のみを対象にしていたが(ファイル名・タイトルはその名残)、後の変更で
+> 犬・鳥も含む「動物」判定(`hasAnimal`)に拡張した。加えて、フレーム差分による軽量な
+> 動体検知(`MotionDetector`)を追加し、動きがあった場合に本検知(MediaPipe)を早期に
+> トリガーできるようにした(下記「動体検知によるトリガー」参照)。
 
 ## 採用した構成
 
@@ -14,9 +19,11 @@ Caster(配信アプリ)がカメラ映像内に猫・人が映っているかを
 - **モデル**: EfficientDet-Lite0(COCO 2017学習済み、メタデータ付き、約4.5MB)
   - `https://storage.googleapis.com/download.tensorflow.org/models/tflite/task_library/object_detection/android/lite-model_efficientdet_lite0_detection_metadata_1.tflite`
     から取得し、`android/app/src/main/assets/efficientdet_lite0.tflite` にコミット済み
-  - ダウンロードして中身を確認済み: 90クラスのCOCOラベルに `person` と `cat` が
+  - ダウンロードして中身を確認済み: 90クラスのCOCOラベルに `person`・`cat`・`dog`・`bird` が
     個別に含まれることを確認した
   - Apache 2.0ライセンス(TensorFlow公式モデル配布)で、リポジトリへの同梱に問題はない
+  - スコア閾値は`SCORE_THRESHOLD = 0.3f`(当初0.5fから引き下げ。実機未検証のため誤検知・
+    見逃しどちらに転ぶかは要調整)
 
 ## 実行方法(バッテリー消費への配慮)
 
@@ -26,8 +33,9 @@ Caster(配信アプリ)がカメラ映像内に猫・人が映っているかを
   古いスマホのCPU/バッテリー負荷が無視できないため
 - 推論自体もWebRTCのキャプチャ/エンコードスレッドをブロックしないよう、専用の
   `ExecutorService`(シングルスレッド)上で実行する
-- 検知は**配信中**に加えて、**待機中(無配信)でも15分に1回だけ**カメラを短時間
-  (5秒間)起動して行う(「見回り」)。常時カメラを起動したままにはしない
+- 検知は**配信中**に加えて、**待機中(無配信)でも1分に1回だけ**カメラを短時間
+  (5秒間)起動して行う(「見回り」、当初は15分間隔だったが後に短縮。下記「待機中の見回り検知」参照)。
+  常時カメラを起動したままにはしない
 
 ## 待機中の見回り検知
 
@@ -36,13 +44,13 @@ Caster(配信アプリ)がカメラ映像内に猫・人が映っているかを
 常時カメラを起動しておく必要がありバッテリー消費が大きくなりすぎるため、
 折衷案として次の方式を採用した:
 
-- 待機中はアプリ内のコルーチンループが15分に1回だけカメラを起動する
-  (`IDLE_DETECTION_INTERVAL_MS`)。`WorkManager`の`PeriodicWorkRequest`には
+- 待機中はアプリ内のコルーチンループが1分に1回だけカメラを起動する
+  (`IDLE_DETECTION_INTERVAL_MS`。当初は15分間隔だったが、常時電源接続で運用する前提を
+  踏まえ見逃しにくさを優先して短縮した)。`WorkManager`の`PeriodicWorkRequest`には
   15分という最短間隔の制約があるが、本サービスはシグナリング接続維持のため
   そもそも常時Foreground Serviceとして生きているので、`WorkManager`を使わず
   アプリ内タイマー(`CoroutineScope` + `delay`)で実装した。プロセスが常駐している
-  前提を活かせるため、15分より短い間隔にしたくなった場合も`WorkManager`の制約なしに
-  調整できる
+  前提を活かせるため、`WorkManager`の制約なしに間隔を自由に調整できる
 - カメラは5秒間だけ起動し、検知シンクにフレームが最低1枚届いたら(または5秒経過したら)
   即座に停止・解放する。配信用の経路とは別の使い捨て`VideoCapturer`/`VideoSource`/
   `VideoTrack`を都度生成する
@@ -55,6 +63,31 @@ Caster(配信アプリ)がカメラ映像内に猫・人が映っているかを
 
 「視聴を始める前にViewer側で確認できるようにする」仕組みは、このあと実装した
 (下記「Viewerへの伝達」参照)。
+
+## 動体検知によるトリガー(plan.md M7「フレーム差分による動体検知ロジック」)
+
+本検知(MediaPipe)は30秒〜1分間隔に間引いているため、その合間に動きがあってもすぐには
+検知結果に反映されない。これを補うため、`MotionDetector`によるフレーム差分ベースの
+軽量な動体検知を追加した。
+
+- I420のYプレーン(輝度)を16x9のグリッドへ間引きサンプリングし、直前のフレームとの
+  グリッド平均差分が閾値(既定12、0-255スケール)を超えたら「動きあり」と判定する。
+  色空間変換・JPEG往復が必要な本検知と異なり、整数の引き算と平均を取るだけなので
+  キャプチャスレッド上で同期的に実行してもキャプチャ・エンコードパイプラインへの
+  影響は無視できると判断した(実機未検証)
+- 動体検知自体は1秒間隔(`MOTION_CHECK_INTERVAL_MS`)で実行する。本検知よりずっと軽量な
+  ため、この間隔は大幅に短くできる
+- 動きを検知した場合、本検知の間引きタイマー(`lastDetectionAtMs`)を早期に0へリセットし、
+  次にフレームが届いた時点ですぐ本検知を実行させる。ただし動きが続く間ずっと本検知が
+  走り続けてバッテリー消費が跳ね上がらないよう、直前の本検知実行から
+  `MOTION_TRIGGER_COOLDOWN_MS`(既定10秒)未満では再トリガーしない
+- 検知結果そのもの(`hasAnimal`/`hasPerson`)は変わらず本検知(MediaPipe)からのみ出る。
+  動体検知はあくまで本検知を早める「トリガー」としてのみ使う
+- plan.md M7のもう一つの項目「動体検知トリガーでの自動配信開始」は今回のスコープ外とした。
+  視聴者がいない状態で配信だけ自動的に始めても、通知の仕組み(Firebase Cloud Messaging等、
+  M7の別項目でまだ未着手)が無ければ誰にも届かず、カメラを余分に起動し続けるだけで
+  バッテリー消費が増える一方になるため。Push通知の仕組みを実装する際に、この動体検知を
+  トリガーとして使う設計になる見込み
 
 ## フレーム変換について
 
@@ -87,14 +120,15 @@ WebRTCの`VideoFrame`はI420(YUV420 planar)形式で、MediaPipeの`BitmapImageB
 ### シグナリング層(signaling/src/room.ts, index.ts)
 
 - Casterは検知結果が出るたびに(配信中・待機中の見回り、いずれも)
-  `{"type":"detection-status","hasCat":bool,"hasPerson":bool}` をシグナリングWebSocketへ送る。
+  `{"type":"detection-status","hasAnimal":bool,"hasPerson":bool}` をシグナリングWebSocketへ送る。
   `signalingClient`は配信の有無に関わらず常時接続されているため、待機中の結果も送れる
 - `Room`(Durable Object)はCaster発の`detection-status`メッセージを見つけると、
-  直近の1件を`{hasCat, hasPerson, updatedAtMs}`としてメモリ上にキャッシュする
+  直近の1件を`{hasAnimal, hasPerson, updatedAtMs}`としてメモリ上にキャッシュする
   (中継自体は今まで通り行われるため、視聴中のViewerがいればそのままライブでも届く)
 - 新設した `GET /room/<token>/status`(`ACCESS_PASSWORD`設定時は`?password=`も必須、
-  WebSocketアップグレードは不要な通常のリクエスト)で、このキャッシュを取得できる。
-  一度も検知結果が報告されていない場合は`{hasCat:null,hasPerson:null,updatedAtMs:null}`を返す
+  WebSocketアップグレードは不要な通常のリクエスト)で、このキャッシュに加えて現在の
+  視聴者数(`viewerCount`)も取得できる。一度も検知結果が報告されていない場合は
+  `{hasAnimal:null,hasPerson:null,updatedAtMs:null,viewerCount:0}`を返す
 - レスポンスに`Access-Control-Allow-Origin: *`を付与している。ViewerはCloudflare Pages、
   シグナリングはCloudflare Workersと別オリジンになるため、CORSヘッダーが無いと
   ブラウザの`fetch()`が失敗する(ローカルのPlaywright E2Eで実際に発生を確認し、
@@ -105,7 +139,7 @@ WebRTCの`VideoFrame`はI420(YUV420 planar)形式で、MediaPipeの`BitmapImageB
 ### Viewer(viewer/app.js, index.html)
 
 - 配信元切り替えダイアログの各カメラに、`GET .../status`で取得した直近の検知結果を
-  バッジ(🐱/🧍)として表示する。**視聴を一度も開始していないカメラ**についても、
+  バッジ(🐾/🧍)として表示する。**視聴を一度も開始していないカメラ**についても、
   WebSocketを開かずに(=Caster側のカメラを起動させずに)確認できる
 - ステータスバーにも同様のバッジを表示する。視聴を開始する瞬間に一度peek取得し、
   視聴中は同じWebSocket経由でライブに届く`detection-status`メッセージでも更新される
@@ -132,3 +166,8 @@ WebRTCの`VideoFrame`はI420(YUV420 planar)形式で、MediaPipeの`BitmapImageB
 - Viewerへの伝達部分(シグナリング層・viewer/app.js)は、Caster側からの実際の
   `detection-status`送信は擬似的なWebSocketクライアントで模擬してPlaywright E2Eで
   検証済みだが、実機のCasterから送信されるメッセージ形式との整合性は未確認
+- `MotionDetector`のグリッドサイズ(16x9)・閾値(12)・チェック間隔(1秒)・
+  クールダウン(10秒)はいずれも実機での調整を前提とした暫定値で、実際のカメラの
+  ノイズレベルや被写体(猫の動き)での妥当性は未検証
+- 犬・鳥を含む`hasAnimal`への拡張、およびスコア閾値0.3fへの引き下げは、実機での
+  誤検知率・見逃し率への影響が未計測
