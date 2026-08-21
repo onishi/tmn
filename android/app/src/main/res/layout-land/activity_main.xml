@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    横画面用レイアウト。配信映像(SurfaceViewRenderer)は縦画面用の固定ポートレート比ではなく、
+    横長の映像として大きく表示する。縦のスクロールをせず1画面に収まるよう、
+    左に状態・操作をまとめた縦カラム、右に映像を大きく表示するカラムの2カラム構成にする。
+    参照するView IDは縦画面用レイアウト(layout/activity_main.xml)と同一にし、
+    MainActivityのfindViewByIdをそのまま共用する。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/tmn_background"
+    android:fitsSystemWindows="true"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <!-- 左カラム: 状態・操作 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.9"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/title_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textColor="@color/tmn_text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="6dp" />
+
+        <!-- 接続状態 + 接続先カード -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/TmnCard"
+            app:contentPadding="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <View
+                        android:id="@+id/signaling_status_dot"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/status_dot"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:id="@+id/signaling_status_text"
+                        style="@style/TmnValue"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/room_info_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/tmn_text_secondary"
+                    android:textSize="9sp"
+                    android:fontFamily="monospace"
+                    android:textIsSelectable="true"
+                    android:layout_marginTop="4dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 配信モードカード -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/TmnCard"
+            app:contentPadding="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TmnLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="配信モード"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="6dp" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/stream_mode_toggle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/mode_auto_button"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:text="AUTO"
+                        android:textSize="11sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/mode_on_button"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:text="ON"
+                        android:textSize="11sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/mode_off_button"
+                        android:layout_width="0dp"
+                        android:layout_height="36dp"
+                        android:layout_weight="1"
+                        android:text="OFF"
+                        android:textSize="11sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp" />
+
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:id="@+id/stream_mode_description_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/tmn_text_secondary"
+                    android:textSize="10sp"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:layout_marginTop="6dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 視聴者カード(残りの高さを使う) -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/TmnCard"
+            app:contentPadding="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginBottom="6dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/viewers_title_text"
+                    style="@style/TmnLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="視聴者"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/viewers_list_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/tmn_text_primary"
+                    android:textSize="10sp"
+                    android:fontFamily="monospace" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/quit_button"
+            style="@style/TmnButton.Danger"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="アプリを終了"
+            android:textSize="12sp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp" />
+
+    </LinearLayout>
+
+    <!-- 右カラム: 配信映像(横長) + 検知 -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1.5"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/TmnCard"
+            app:contentPadding="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <!-- 配信映像は横長のまま大きく表示する(縦画面用の固定ポートレート比とは異なる) -->
+                <com.google.android.material.card.MaterialCardView
+                    app:cardBackgroundColor="#000000"
+                    app:cardCornerRadius="8dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <org.webrtc.SurfaceViewRenderer
+                        android:id="@+id/preview_renderer"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="8dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TmnLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="動物・人検知"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/detection_text"
+                            style="@style/TmnValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="12sp"
+                            android:layout_marginTop="2dp" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/detect_now_button"
+                        style="@style/TmnButton.Primary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="今すぐ検知"
+                        android:textSize="12sp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:layout_marginStart="8dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+</LinearLayout>

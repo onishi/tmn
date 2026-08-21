@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
+import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
 import android.util.Log
@@ -17,8 +18,8 @@ import java.util.concurrent.Executors
 import org.webrtc.VideoFrame
 
 /**
- * カメラ映像フレームに猫・人が映っているかをオンデバイスで検知する。
- * EfficientDet-Lite0(COCO学習済み、90クラス中に person・cat を含む)を
+ * カメラ映像フレームにペットっぽい動物(猫・犬・鳥)・人が映っているかをオンデバイスで検知する。
+ * EfficientDet-Lite0(COCO学習済み、90クラス中に person・cat・dog・bird を含む)を
  * MediaPipe Tasks Vision の ObjectDetector で実行する。
  *
  * 呼び出し側は [detectFrameAsync] に渡す前に必ず [VideoFrame.retain] しておくこと。
@@ -40,17 +41,20 @@ class CatPersonDetector(
             .setScoreThreshold(SCORE_THRESHOLD)
             .setMaxResults(MAX_RESULTS)
             .setResultListener { result, _ ->
-                var hasCat = false
+                var hasAnimal = false
                 var hasPerson = false
+                val seen = mutableListOf<String>()
                 for (detection in result.detections()) {
                     for (category in detection.categories()) {
+                        seen.add("${category.categoryName()}=${category.score()}")
                         when (category.categoryName()) {
-                            "cat" -> hasCat = true
+                            "cat", "dog", "bird" -> hasAnimal = true
                             "person" -> hasPerson = true
                         }
                     }
                 }
-                onResult(CatPersonDetectionResult(hasCat, hasPerson))
+                Log.d(TAG, "detection result: ${if (seen.isEmpty()) "(none above threshold)" else seen.joinToString()}")
+                onResult(CatPersonDetectionResult(hasAnimal, hasPerson))
             }
             .setErrorListener { error -> Log.e(TAG, "detection error", error) }
             .build()
@@ -70,7 +74,7 @@ class CatPersonDetector(
                     return@execute
                 }
                 try {
-                    val bitmap = i420ToBitmap(i420)
+                    val bitmap = i420ToBitmap(i420, frame.rotation)
                     val mpImage = BitmapImageBuilder(bitmap).build()
                     detector.detectAsync(mpImage, timestampMs)
                 } finally {
@@ -94,14 +98,21 @@ class CatPersonDetector(
      * ビルド・実機検証ができないこの開発環境では、既存の実装が確定しているAPIに乗せて
      * 正しさの確信度を上げる方を優先したため(検知は30秒に1回程度の間引き実行なので、
      * JPEG変換のオーバーヘッドは実用上問題にならない)。 */
-    private fun i420ToBitmap(buffer: VideoFrame.I420Buffer): Bitmap {
+    private fun i420ToBitmap(buffer: VideoFrame.I420Buffer, rotationDegrees: Int): Bitmap {
         val nv21 = i420ToNv21(buffer)
         val yuvImage = YuvImage(nv21, ImageFormat.NV21, buffer.width, buffer.height, null)
         val output = ByteArrayOutputStream()
         yuvImage.compressToJpeg(Rect(0, 0, buffer.width, buffer.height), 90, output)
         val jpegBytes = output.toByteArray()
-        return BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)
+        val decoded = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.size)
             ?: throw IllegalStateException("failed to decode frame as bitmap")
+        // カメラセンサーはランドスケープ基準で、端末の向きに応じたrotationはVideoFrame側の
+        // メタデータとして別で渡ってくる(WebRTCの標準的な仕様で、バッファ自体には
+        // 反映されていない)。これを適用しないと縦持ち撮影時に画像が横倒しのまま
+        // 検知エンジンに渡ってしまい、動物・人をほぼ検知できなくなる
+        if (rotationDegrees == 0) return decoded
+        val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+        return Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
     }
 
     private fun i420ToNv21(buffer: VideoFrame.I420Buffer): ByteArray {
@@ -135,12 +146,12 @@ class CatPersonDetector(
         return nv21
     }
 
-    data class CatPersonDetectionResult(val hasCat: Boolean, val hasPerson: Boolean)
+    data class CatPersonDetectionResult(val hasAnimal: Boolean, val hasPerson: Boolean)
 
     companion object {
         private const val TAG = "CatPersonDetector"
         private const val MODEL_ASSET_PATH = "efficientdet_lite0.tflite"
-        private const val SCORE_THRESHOLD = 0.5f
+        private const val SCORE_THRESHOLD = 0.3f
         private const val MAX_RESULTS = 5
     }
 }
