@@ -69,6 +69,11 @@ class StreamingService : Service(), SignalingClient.Listener {
     private var catPersonDetector: CatPersonDetector? = null
     private var lastDetectionAtMs = 0L
 
+    // フレーム差分による軽量な動体検知。本検知(MediaPipe)の間引き中に動きがあった場合、
+    // 早期に本検知を実行させるトリガーとして使う(検知結果そのものはこの動体検知からは出さない)
+    private val motionDetector = MotionDetector()
+    private var lastMotionCheckAtMs = 0L
+
     // 手動配信モード(AUTO/ON/OFF)。既定はAUTO(視聴者が来た時だけ自動配信)
     private var streamMode = StreamingStatus.StreamMode.AUTO
 
@@ -83,10 +88,33 @@ class StreamingService : Service(), SignalingClient.Listener {
      * 配信中・待機中どちらの経路からも共有して使う検知シンク。間引いたフレームだけ
      * 動物・人検知に回す(常時推論はしない)。結果は [onDetectionResult] でその時点の
      * 配信状態(peerConnectionの有無)に応じて振り分けられる。
+     * 加えて、軽量なフレーム差分による動体検知([MotionDetector])を高頻度に実行し、
+     * 動きがあった場合は本検知の間引きタイマーを早期にリセットする(動きが無い間は
+     * 従来通りDETECTION_INTERVAL_MS間隔のまま)。
      */
     private val detectionSink = VideoSink { frame ->
-        val detector = catPersonDetector
         val now = SystemClock.elapsedRealtime()
+
+        // 動体検知は軽量(輝度の粗いダウンサンプリング比較のみ)なため、キャプチャスレッド上で
+        // 同期的に実行する(retain/releaseは不要。この呼び出しの間だけバッファを参照する)。
+        // 本検知よりずっと高頻度に間引いて実行し、動きがあれば本検知の間引きタイマーを
+        // 早期リセットする。ただし動きが続く間ずっと本検知が走り続けないよう、
+        // MOTION_TRIGGER_COOLDOWN_MS未満の間隔では再トリガーしない
+        if (now - lastMotionCheckAtMs >= MOTION_CHECK_INTERVAL_MS) {
+            lastMotionCheckAtMs = now
+            val i420 = frame.buffer.toI420()
+            if (i420 != null) {
+                try {
+                    if (motionDetector.onFrame(i420) && now - lastDetectionAtMs >= MOTION_TRIGGER_COOLDOWN_MS) {
+                        lastDetectionAtMs = 0L // 次にこのシンクへ届くフレームで即座に本検知を行わせる
+                    }
+                } finally {
+                    i420.release()
+                }
+            }
+        }
+
+        val detector = catPersonDetector
         if (detector == null || now - lastDetectionAtMs < DETECTION_INTERVAL_MS) {
             return@VideoSink // retainしていないため、何もしなくてもWebRTC側が解放する
         }
@@ -668,6 +696,16 @@ class StreamingService : Service(), SignalingClient.Listener {
 
         // 動物・人検知の実行間隔。毎フレーム推論するとバッテリー消費が大きいため間引く
         private const val DETECTION_INTERVAL_MS = 30000L
+
+        // 動体検知(フレーム差分)を実行する間隔。本検知よりずっと軽量なため、この間隔は
+        // 大幅に短くできる。1秒間隔(≒1fps相当のサンプリング)は、動きを見逃しにくい
+        // 頻度と、キャプチャスレッドへの負荷のバランスとして選んだ値
+        private const val MOTION_CHECK_INTERVAL_MS = 1000L
+
+        // 動体検知によって本検知を早期トリガーする場合でも、この間隔より短い間では
+        // 再トリガーしない。動きが続く間ずっと30秒間隔を無視して本検知が走り続ける
+        // (バッテリー消費が跳ね上がる)のを防ぐための下限
+        private const val MOTION_TRIGGER_COOLDOWN_MS = 10000L
 
         // 待機中(無配信)でもカメラを起動して見回る間隔。常時電源に接続して運用する前提の
         // ため、バッテリー消費よりカメラ開閉のオーバーヘッド・発熱がより重要な制約になる。
