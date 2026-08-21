@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>TMN - 見守りカメラ</title>
+  <title>TMN Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0b0c" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230b0b0c'/%3E%3Crect x='3' y='7' width='13' height='11' rx='2' fill='%23f5a623'/%3E%3Cpath d='M16 10.5 21 7v11l-5-3.5z' fill='%23f5a623'/%3E%3C/svg%3E" />
@@ -114,6 +114,14 @@
     #detection-badge:empty {
       display: none;
     }
+    #viewer-count-badge {
+      flex: 0 0 auto;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    #viewer-count-badge:empty {
+      display: none;
+    }
     #status-detail {
       font-size: 12px;
       color: var(--text-secondary);
@@ -123,6 +131,12 @@
     }
     #status-detail:empty {
       display: none;
+    }
+    #status-bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 0 auto;
     }
 
     /* --- アイコンボタン共通 --- */
@@ -143,12 +157,50 @@
     .icon-button:active {
       background: rgba(255, 255, 255, 0.2);
     }
+    /* .icon-buttonのdisplay指定が、hidden属性のデフォルト非表示(display:none)を
+       上書きしてしまう(author styleがuser-agent styleより優先されるため)ので明示する */
+    .icon-button[hidden] {
+      display: none;
+    }
     #fullscreen-button {
       position: fixed;
       z-index: 10;
       right: calc(14px + env(safe-area-inset-right));
       bottom: calc(14px + env(safe-area-inset-bottom));
       background: rgba(0, 0, 0, 0.55);
+    }
+
+    /* --- 画面下部の接続・切断ボタン(大きめの円形、タップしやすく) --- */
+    #connection-button {
+      position: fixed;
+      z-index: 10;
+      left: 50%;
+      bottom: calc(56px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      width: 68px;
+      height: 68px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+      touch-action: manipulation;
+    }
+    #connection-button[hidden] {
+      display: none;
+    }
+    #connection-button.is-connect {
+      background: var(--success);
+    }
+    #connection-button.is-disconnect {
+      background: var(--danger);
+    }
+    #connection-button svg {
+      width: 30px;
+      height: 30px;
     }
 
     /* --- 中央メッセージ(接続中・オンボーディング等) --- */
@@ -373,13 +425,16 @@
         <div id="camera-name-row">
           <span id="camera-name">TMN 見守りカメラ</span>
           <span id="detection-badge" aria-live="polite"></span>
+          <span id="viewer-count-badge" aria-live="polite"></span>
         </div>
         <span id="status-detail"></span>
       </div>
     </div>
-    <button id="switch-button" type="button" class="icon-button" aria-label="配信元を切り替え" title="配信元を切り替え">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg>
-    </button>
+    <div id="status-bar-actions">
+      <button id="switch-button" type="button" class="icon-button" aria-label="配信元を切り替え" title="配信元を切り替え">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-4v12l-6-4"/></svg>
+      </button>
+    </div>
   </div>
 
   <video id="remote-video" autoplay playsinline muted></video>
@@ -389,6 +444,8 @@
     <p id="center-text"></p>
     <button id="center-action" type="button" class="btn btn-primary" hidden></button>
   </div>
+
+  <button id="connection-button" type="button" hidden></button>
 
   <button id="fullscreen-button" type="button" class="icon-button" hidden aria-label="全画面表示" title="全画面表示"></button>
 

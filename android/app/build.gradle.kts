@@ -48,6 +48,7 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.12.0")
 
     // カメラ映像取得
     implementation("androidx.camera:camera-core:1.3.4")
@@ -55,7 +56,7 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.4")
 
     // WebRTC (Google公式SDKはメンテ終了のため、コミュニティメンテのビルドを使用)
-    implementation("io.github.webrtc-sdk:android:125.6422.07.1")
+    implementation("io.github.webrtc-sdk:android:125.6422.07")
 
     // 猫・人検知(オンデバイス物体検出)。TensorFlow Lite Task Libraryはメンテナンスモードで
     // GoogleがMediaPipe Tasksへの移行を推奨しているため、こちらを採用する

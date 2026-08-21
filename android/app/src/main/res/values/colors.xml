@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Viewer(視聴Webアプリ)の配色と揃えたダークテーマ -->
+    <color name="tmn_background">#0B0B0C</color>
+    <color name="tmn_surface">#2A2A30</color>
+    <color name="tmn_surface_variant">#232326</color>
+    <!-- トグルの非選択ボタンなど、surfaceより一段明るく見せたい箇所用 -->
+    <color name="tmn_surface_bright">#45454E</color>
+    <color name="tmn_outline">#33333A</color>
+    <color name="tmn_text_primary">#F2F2F2</color>
+    <color name="tmn_text_secondary">#9A9A9E</color>
+    <color name="tmn_accent">#F5A623</color>
+    <color name="tmn_accent_text">#201400</color>
+    <color name="tmn_success">#3ECF6E</color>
+    <color name="tmn_danger">#E0575A</color>
+    <!-- 終了ボタンの薄い赤背景(tmn_dangerの約20%不透明度) -->
+    <color name="tmn_danger_soft">#33E0575A</color>
+</resources>

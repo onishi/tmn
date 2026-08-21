@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/tmn_accent</item>
+        <item name="colorPrimaryDark">@color/tmn_background</item>
+        <item name="colorAccent">@color/tmn_accent</item>
+        <item name="colorOnPrimary">@color/tmn_accent_text</item>
+        <item name="android:windowBackground">@color/tmn_background</item>
+        <item name="android:textColorPrimary">@color/tmn_text_primary</item>
+        <item name="android:textColorSecondary">@color/tmn_text_secondary</item>
+        <item name="android:statusBarColor">@color/tmn_background</item>
+    </style>
+
+    <style name="TmnButton.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/tmn_accent</item>
+        <item name="android:textColor">@color/tmn_accent_text</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+    </style>
+
+    <style name="TmnButton.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/tmn_outline</item>
+        <item name="android:textColor">@color/tmn_text_secondary</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+    </style>
+
+    <!-- 「アプリを終了」用。破壊的な操作だと分かるよう赤系で目立たせる -->
+    <style name="TmnButton.Danger" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/tmn_danger</item>
+        <item name="strokeWidth">1.5dp</item>
+        <item name="backgroundTint">@color/tmn_danger_soft</item>
+        <item name="android:textColor">@color/tmn_danger</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+    </style>
+
+    <style name="TmnCard" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/tmn_surface</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/tmn_outline</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="contentPadding">12dp</item>
+    </style>
+
+    <style name="TmnLabel">
+        <item name="android:textColor">@color/tmn_text_secondary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:letterSpacing">0.03</item>
+    </style>
+
+    <style name="TmnValue">
+        <item name="android:textColor">@color/tmn_text_primary</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+</resources>
