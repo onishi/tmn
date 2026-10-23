@@ -353,7 +353,7 @@ class StreamingService : Service(), SignalingClient.Listener {
                 val request = Request.Builder().url(turnCredentialsUrl()).build()
                 OkHttpClient().newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@withContext emptyList()
-                    val body = response.body?.string() ?: return@withContext emptyList()
+                    val body = response.body.string()
                     val iceServers = JSONObject(body).optJSONObject("iceServers")
                         ?: return@withContext emptyList()
                     val urlsJson = iceServers.getJSONArray("urls")
