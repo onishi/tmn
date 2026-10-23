@@ -47,7 +47,7 @@ async function main() {
   console.log("OK: caster received", joined);
 
   // 2. caster -> viewer への offer 中継
-  caster.ws.send(JSON.stringify({ type: "offer", sdp: "fake-sdp-offer" }));
+  caster.ws.send(JSON.stringify({ type: "offer", viewerId: joined.viewerId, sdp: "fake-sdp-offer" }));
   const offer = await waitFor(viewer.received, (m) => m.type === "offer");
   console.log("OK: viewer received offer", offer);
 
@@ -57,7 +57,7 @@ async function main() {
   console.log("OK: caster received answer", answer);
 
   // 4. ICE candidate 双方向中継
-  caster.ws.send(JSON.stringify({ type: "ice-candidate", candidate: "cand-from-caster" }));
+  caster.ws.send(JSON.stringify({ type: "ice-candidate", viewerId: joined.viewerId, candidate: "cand-from-caster" }));
   await waitFor(viewer.received, (m) => m.type === "ice-candidate" && m.candidate === "cand-from-caster");
   console.log("OK: viewer received ice-candidate from caster");
 

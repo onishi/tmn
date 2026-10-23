@@ -1,6 +1,6 @@
 name = "tmn-signaling"
 main = "src/index.ts"
-compatibility_date = "2024-09-23"
+compatibility_date = "2026-10-01"
 
 [[durable_objects.bindings]]
 name = "ROOMS"
